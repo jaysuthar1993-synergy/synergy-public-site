@@ -1,10 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Allow images from external domains if needed
+  output: 'export',        // Static HTML export — no server needed, works on Cloudflare Pages
   images: {
-    unoptimized: true,
+    unoptimized: true,     // Required for static export (no Next.js image optimization server)
   },
-  // Trailing slash for Netlify compatibility
   trailingSlash: false,
 };
 
