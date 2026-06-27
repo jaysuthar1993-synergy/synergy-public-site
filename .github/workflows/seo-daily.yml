@@ -1,0 +1,70 @@
+name: SEO Daily Article
+
+on:
+  schedule:
+    - cron: '30 2 * * *'   # 8:00 AM IST
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: 'Topic override (leave blank to use queue)'
+        required: false
+        type: string
+
+jobs:
+  generate-article:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install google-generativeai youtube-transcript-api requests beautifulsoup4 feedparser python-dateutil
+
+      - name: Run SEO pipeline
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          TOPIC_OVERRIDE: ${{ inputs.topic }}
+        run: |
+          if [ -n "$TOPIC_OVERRIDE" ]; then
+            python scripts/seo_youtube_pipeline.py "$TOPIC_OVERRIDE" --auto
+          else
+            python scripts/seo_youtube_pipeline.py --queue --auto
+          fi
+
+      - name: Get generated slug
+        id: slug
+        run: |
+          SLUG=$(cat .seo_last_slug 2>/dev/null || echo "")
+          echo "slug=$SLUG" >> $GITHUB_OUTPUT
+
+      - name: Create PR if article generated
+        if: steps.slug.outputs.slug != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SLUG="${{ steps.slug.outputs.slug }}"
+          BRANCH="seo-draft/$SLUG"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add src/data/blogData.js
+          git commit -m "feat(seo): add article $SLUG"
+          git push origin "$BRANCH"
+          gh pr create \
+            --title "SEO: $SLUG" \
+            --body "Auto-generated SEO article. Review the content in \`src/data/blogData.js\` before merging.
+
+**Preview:** After merge to \`develop\`, Netlify will build a preview URL.
+**Promote to main:** Merge develop → main after approval." \
+            --base develop \
+            --head "$BRANCH"

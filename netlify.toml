@@ -1,0 +1,33 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Branch-based deploys
+# main    → synergyfuturecorp.com       (production)
+# staging → staging--synergy-public.netlify.app
+# develop → develop--synergy-public.netlify.app
+
+[context.production]
+  command = "npm run build"
+
+[context.staging]
+  command = "npm run build"
+
+[context.develop]
+  command = "npm run build"
+
+# Redirect /sitemap.xml → Next.js built-in /sitemap route
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/sitemap"
+  status = 200
+  force = true
+
+# SPA fallback — Next.js handles this but belt-and-suspenders
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

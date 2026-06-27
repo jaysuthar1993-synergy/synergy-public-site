@@ -1,0 +1,42 @@
+# SEO Topics Queue — seo_youtube_pipeline.py
+# Format: one topic per line
+# Run next: python scripts/seo_youtube_pipeline.py --queue
+# Done topics tracked in seo_topics_done.txt
+
+# === BATCH 1: High intent / existing competitors ===
+bank reconciliation tally prime
+free bank statement to tally
+ca firm bank to tally workflow
+tally prime bank reconciliation step by step
+
+# === BATCH 2: Bank-specific ===
+hdfc bank statement tally entry
+sbi bank statement tally import
+icici bank statement tally
+axis bank statement tally prime
+kotak bank statement tally
+pnb bank statement tally
+
+# === BATCH 3: GST + Tally ===
+gst payment tally prime
+gst return tally bank entry
+tds entry tally bank
+tally gst reconciliation bank
+
+# === BATCH 4: CA Workflow ===
+ca firm tally multiple companies
+accounting firm bank import tally
+tally voucher entry bank statement
+journal entry bank statement tally
+
+# === BATCH 5: Common problems ===
+tally bank entry errors fix
+duplicate voucher tally bank
+tally ledger mismatch bank
+excel to tally without xml
+
+# === BATCH 6: Seasonal / GST filing ===
+gstr 2b reconciliation tally
+input tax credit tally bank
+gst audit tally bank statement
+annual return tally bank entries
