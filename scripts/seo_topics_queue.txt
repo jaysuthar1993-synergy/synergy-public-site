@@ -40,3 +40,48 @@ gstr 2b reconciliation tally
 input tax credit tally bank
 gst audit tally bank statement
 annual return tally bank entries
+
+# === BATCH 7: More banks ===
+bank of baroda statement tally import
+canara bank statement tally entry
+union bank statement tally prime
+indusind bank statement tally
+idfc first bank statement tally
+yes bank statement tally entry
+federal bank statement tally
+
+# === BATCH 8: Common errors ===
+tally bank entry errors fix
+duplicate voucher tally bank
+tally ledger mismatch bank
+excel to tally without xml
+bank charges entry tally prime
+interest received entry tally bank
+cheque bounce entry tally prime
+tally opening balance bank mismatch
+
+# === BATCH 9: Tally version specific ===
+tallyprime 4.0 bank reconciliation
+tally erp 9 vs tallyprime bank import
+upgrade tally erp 9 to prime bank data
+tally prime new features bank 2025
+
+# === BATCH 10: Year-end and audit ===
+year end closing tally bank reconciliation
+bank audit tally prime statement
+tally balance sheet bank match
+closing entries tally bank year end
+tally finalization bank statement match
+
+# === BATCH 11: Payroll ===
+salary payment entry tally bank
+payroll bank transfer tally prime
+pf esi payment tally bank entry
+employee reimbursement tally bank
+
+# === BATCH 12: Bulk import ===
+excel bank statement convert tally format
+pdf bank statement tally import
+csv bank statement tally prime
+bulk bank entries tally import
+tally xml import bank statement guide
