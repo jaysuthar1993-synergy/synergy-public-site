@@ -1,4 +1,4 @@
-name: SEO Daily Article
+name: SEO Daily Article Generator
 
 on:
   schedule:
