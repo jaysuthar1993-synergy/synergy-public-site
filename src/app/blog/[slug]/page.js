@@ -59,6 +59,38 @@ function renderContent(blocks) {
             </table>
           </div>
         );
+      case 'steps':
+        return (
+          <ol key={i} className="blog-steps-list">
+            {block.items.map((item, j) => <li key={j}>{item}</li>)}
+          </ol>
+        );
+      case 'infographic':
+        if (block.variant === 'checklist') {
+          return (
+            <div key={i} className="blog-infographic blog-infographic-checklist">
+              <h3 className="blog-infographic-title">{block.title}</h3>
+              <ul className="blog-infographic-items">
+                {block.items.map((item, j) => (
+                  <li key={j}><span className="blog-infographic-check">✓</span>{item}</li>
+                ))}
+              </ul>
+            </div>
+          );
+        }
+        return (
+          <div key={i} className="blog-infographic blog-infographic-steps">
+            <h3 className="blog-infographic-title">{block.title}</h3>
+            <div className="blog-infographic-grid">
+              {block.items.map((item, j) => (
+                <div key={j} className="blog-infographic-step">
+                  <span className="blog-infographic-num">{j + 1}</span>
+                  <p>{item}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
       case 'faq':
         return (
           <div key={i} className="blog-faq">

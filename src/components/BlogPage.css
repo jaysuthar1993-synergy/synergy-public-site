@@ -257,6 +257,97 @@
   font-size: 13px;
   font-family: monospace;
 }
+/* Numbered steps list */
+.blog-steps-list {
+  padding-left: 24px;
+  margin: 0 0 28px 0;
+  counter-reset: steps;
+}
+.blog-steps-list li {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 14px;
+  line-height: 1.7;
+  padding-left: 4px;
+}
+
+/* Infographic card — embedded in article as a visual asset */
+.blog-infographic {
+  background: linear-gradient(135deg, #f0f4ff 0%, #fafbff 100%);
+  border: 2px solid #e0e7ff;
+  border-radius: 16px;
+  padding: 32px;
+  margin: 36px 0;
+}
+.blog-infographic-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a1a2e;
+  text-align: center;
+  margin: 0 0 24px 0;
+  letter-spacing: -0.2px;
+}
+/* Steps variant */
+.blog-infographic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 14px;
+}
+.blog-infographic-step {
+  background: white;
+  border-radius: 12px;
+  padding: 18px 14px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.blog-infographic-num {
+  display: flex;
+  width: 34px;
+  height: 34px;
+  background: #6366f1;
+  color: white;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 15px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.blog-infographic-step p {
+  font-size: 12px;
+  color: #444;
+  margin: 0;
+  line-height: 1.5;
+}
+/* Checklist variant */
+.blog-infographic-checklist .blog-infographic-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.blog-infographic-checklist .blog-infographic-items li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 15px;
+  color: #333;
+  padding: 11px 0;
+  border-bottom: 1px solid #e0e7ff;
+  line-height: 1.55;
+}
+.blog-infographic-checklist .blog-infographic-items li:last-child { border-bottom: none; }
+.blog-infographic-check {
+  color: #10b981;
+  font-weight: 700;
+  font-size: 17px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
 .blog-faq { margin: 0 0 32px 0; }
 .blog-faq-item {
   background: #f8f9fa;
@@ -360,4 +451,7 @@
   .blog-cta-box { padding: 32px 24px; }
   .blog-inline-cta { padding: 28px 24px; }
   .blog-related-grid { grid-template-columns: 1fr; }
+  .blog-infographic { padding: 24px 16px; }
+  .blog-infographic-grid { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; }
+  .blog-infographic-step { padding: 14px 10px; }
 }

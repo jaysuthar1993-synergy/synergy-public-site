@@ -1,0 +1,82 @@
+name: SEO News Monitor
+
+on:
+  schedule:
+    - cron: '0 3 * * *'   # 8:30 AM IST (UTC+5:30)
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Which sources to check'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - govt-only
+          - channels-only
+
+jobs:
+  monitor-news:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install google-generativeai feedparser requests beautifulsoup4 google-api-python-client
+
+      - name: Run news monitor (auto mode)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: |
+          MODE="${{ inputs.mode || 'all' }}"
+          if [ "$MODE" = "govt-only" ]; then
+            python scripts/seo_news_monitor.py --auto --govt-only
+          elif [ "$MODE" = "channels-only" ]; then
+            python scripts/seo_news_monitor.py --auto --channels-only
+          else
+            python scripts/seo_news_monitor.py --auto
+          fi
+
+      - name: Check how many updates were added
+        id: count
+        run: |
+          COUNT=$(cat .seo_news_last_count 2>/dev/null || echo "0")
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+          echo "Found: $COUNT new update(s)"
+
+      - name: Create PR if updates found
+        if: steps.count.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COUNT="${{ steps.count.outputs.count }}"
+          TODAY=$(date +%Y-%m-%d)
+          BRANCH="seo-news/$TODAY"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add src/data/updatesData.js scripts/seo_news_seen.json
+          git diff --cached --quiet || git commit -m "feat(seo): add $COUNT news updates ($TODAY)"
+          git push origin "$BRANCH"
+          gh pr create \
+            --title "SEO News: $COUNT new update(s) ($TODAY)" \
+            --body "Auto-generated summaries from government RSS feeds and CA YouTube channels.
+
+**$COUNT new item(s)** added to \`src/data/updatesData.js\`.
+
+**Review:** Check that summaries are accurate and the tallyImpact field is practical.
+**Merge to develop** → preview on Cloudflare staging.
+**Merge develop → master** → live on synergyfuturecorp.com/updates." \
+            --base develop \
+            --head "$BRANCH"

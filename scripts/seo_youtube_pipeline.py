@@ -155,19 +155,37 @@ def build_prompt(topic, videos_with_transcript):
         research_text += f"\n\n--- VIDEO: {v['title']} (Channel: {v['channel']}) ---\n"
         research_text += v['transcript'][:2500]
 
-    return f"""You are writing an SEO blog article for synergyfuturecorp.com about Synergy Automation.
+    return f"""You are writing an SEO Knowledge Hub article for synergyfuturecorp.com about Synergy Automation.
 This tool lets Indian CAs and accountants post Excel bank statements directly to Tally Prime and Tally ERP 9 — free, no XML files.
 
 TOPIC: {topic}
 
 {BRAND_RULES}
 
-RESEARCH (YouTube videos — use as INSPIRATION ONLY, write 100% original content):
+RESEARCH (YouTube transcripts — use as INSPIRATION for what to explain, write 100% original content):
 {research_text}
 
-OUTPUT FORMAT:
-Return ONLY a valid JavaScript object (no export, no const, no markdown code blocks — just the raw object).
-Use single quotes for all strings. Follow this EXACT schema:
+─── WRITING STYLE ─────────────────────────────────────────────────────────────
+- Simple English. Write like talking to a busy CA, not writing a textbook.
+- Overview first, then detail. Give the answer in the first paragraph.
+- Each section stands alone — no "as mentioned above" or "see below" references.
+- Specific and actionable — say WHAT to click and WHERE, not just "reconcile your entries".
+- Keep the reader moving: short sentences, clear steps, no filler phrases.
+
+─── REQUIRED CONTENT STRUCTURE ────────────────────────────────────────────────
+Follow these blocks IN THIS EXACT ORDER (do not add extra sections or reorder):
+
+1. intro       — Hook: 1 sentence naming the exact pain. Then 2-3 sentences: what this covers + who benefits.
+2. h2 + p      — "What is [Topic]" — plain-English explanation, 60-80 words, no jargon.
+3. h2 + steps  — "How to [Primary Action] — Step by Step" — 4-6 numbered steps, each 1-2 clear sentences.
+4. h2 + list   — "Common Mistakes to Avoid" — 3-5 specific mistakes Indian CAs actually make here.
+5. h2 + p      — "How Synergy Automation Makes This Easier" — explain product value for this exact topic.
+6. infographic — REQUIRED. Visual summary card. variant='steps' for process topics, 'checklist' for tips.
+7. faq         — REQUIRED. 4-5 Q&As, self-contained answers (AI engines quote these directly).
+
+─── OUTPUT FORMAT ─────────────────────────────────────────────────────────────
+Return ONLY a valid JavaScript object (no export, no const, no markdown blocks — just the raw object).
+Use single quotes for ALL strings. Escape apostrophes as \\'.
 
 {{
   slug: 'url-slug-here',
@@ -180,39 +198,58 @@ Use single quotes for all strings. Follow this EXACT schema:
   content: [
     {{
       type: 'intro',
-      text: '3-4 sentence intro. State problem, who this is for, what they learn. Mention Synergy Automation.'
+      text: 'Hook: one sentence naming the exact problem CAs face with this topic. Then 2-3 sentences on what you\\'ll learn here and who benefits most.'
     }},
-    {{ type: 'h2', text: 'First Major Section (contains primary keyword)' }},
-    {{ type: 'p', text: 'Paragraph content...' }},
-    {{ type: 'h2', text: 'Second Major Section' }},
-    {{ type: 'p', text: 'Paragraph content...' }},
-    {{ type: 'h3', text: 'Subsection if needed' }},
-    {{ type: 'p', text: 'Paragraph content...' }},
-    {{ type: 'list', items: ['Point 1', 'Point 2', 'Point 3', 'Point 4'] }},
-    {{ type: 'h2', text: 'How Synergy Automation Helps' }},
-    {{ type: 'p', text: 'Explain Synergy Automation value prop for this topic...' }},
-    {{ type: 'h2', text: 'Conclusion' }},
-    {{ type: 'p', text: 'Wrap up with call to action...' }},
+    {{ type: 'h2', text: 'What is [Topic]' }},
+    {{ type: 'p', text: 'Plain-English explanation in 60-80 words. No jargon. Define any technical terms.' }},
+    {{ type: 'h2', text: 'How to [Primary Action] — Step by Step' }},
+    {{ type: 'steps', items: [
+      'Step 1: Do this specific thing — explain exactly how in one sentence.',
+      'Step 2: Then do this — mention what to watch out for.',
+      'Step 3: ...',
+      'Step 4: ...'
+    ]}},
+    {{ type: 'h2', text: 'Common Mistakes to Avoid' }},
+    {{ type: 'list', items: [
+      'Mistake description: explain what goes wrong and the specific fix.',
+      'Mistake description: ...',
+      'Mistake description: ...'
+    ]}},
+    {{ type: 'h2', text: 'How Synergy Automation Makes This Easier' }},
+    {{ type: 'p', text: 'Explain specifically — not generically — how Synergy Automation helps with THIS exact topic. Mention the relevant step from the guide above.' }},
+    {{
+      type: 'infographic',
+      variant: 'steps',
+      title: 'Process title: 6-8 words',
+      items: [
+        'Short step label (4-7 words)',
+        'Short step label',
+        'Short step label',
+        'Short step label',
+        'Short step label'
+      ]
+    }},
     {{
       type: 'faq',
       items: [
-        {{ q: 'Question using primary keyword?', a: 'Self-contained 2-3 sentence answer. Must make sense without surrounding context — AI engines quote these directly.' }},
-        {{ q: 'Second specific question?', a: 'Self-contained answer.' }},
-        {{ q: 'Third question about Synergy Automation?', a: 'Self-contained answer mentioning Synergy Automation.' }},
-        {{ q: 'Fourth question (common concern)?', a: 'Self-contained answer.' }}
+        {{ q: 'Question using primary keyword?', a: 'Self-contained 2-3 sentence answer. No "see above" — the answer must make sense alone. AI engines quote these directly.' }},
+        {{ q: 'Second specific question Indian CAs ask?', a: 'Self-contained answer.' }},
+        {{ q: 'Question about Synergy Automation for this topic?', a: 'Self-contained answer mentioning Synergy Automation and what it does here.' }},
+        {{ q: 'Common concern or edge case?', a: 'Self-contained answer.' }},
+        {{ q: 'Fifth question (optional but recommended)?', a: 'Self-contained answer.' }}
       ]
     }}
   ]
 }}
 
-CONTENT RULES:
-- Minimum 3 h2 sections + 1 faq section
-- Minimum 4 FAQ items — all self-contained (critical for GEO/AI citations)
+─── CONTENT RULES ─────────────────────────────────────────────────────────────
+- MANDATORY blocks: steps, infographic, faq — omitting any = invalid output
+- Minimum 4 FAQ items, all self-contained (critical for GEO/AI engine citations)
 - Mention "Synergy Automation" at least 3 times in body content
 - Primary keyword in: title, first h2, and at least one FAQ question
-- Include relevant Indian bank names (HDFC, SBI, ICICI, etc.) where natural
-- Only mention features that actually exist: Excel upload, review table, direct posting, ledger assignment
-- Do NOT mention: PDF support, duplicate detection, auto-suggesting wrong bank, LedgerMatch
+- Include relevant Indian bank names (HDFC, SBI, ICICI, Axis, Kotak, etc.) where natural
+- Features you MAY mention: Excel upload, review table, direct posting to Tally, ledger assignment
+- NEVER mention: PDF upload, LedgerMatch, duplicate detection — these don\\'t exist or are dev-only
 """
 
 

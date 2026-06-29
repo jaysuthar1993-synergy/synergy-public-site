@@ -48,8 +48,10 @@ except ImportError:
 # ─────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────
-REPO_ROOT        = Path(__file__).parent.parent
-SEEN_FILE        = Path(__file__).parent / 'seo_news_seen.json'
+REPO_ROOT         = Path(__file__).parent.parent
+SEEN_FILE         = Path(__file__).parent / 'seo_news_seen.json'
+UPDATES_DATA_FILE = REPO_ROOT / 'src' / 'data' / 'updatesData.js'
+LAST_COUNT_FILE   = REPO_ROOT / '.seo_news_last_count'
 GEMINI_API_KEY    = os.environ.get('GEMINI_API_KEY')
 YOUTUBE_API_KEY   = os.environ.get('YOUTUBE_API_KEY')
 TODAY             = date.today().isoformat()
@@ -445,14 +447,161 @@ def run_monitor(mode='all'):
             print('  Skipped.')
 
 
+# ─────────────────────────────────────────────
+# AUTO MODE — write summaries to updatesData.js
+# (used by GitHub Actions, no interactive prompts)
+# ─────────────────────────────────────────────
+def _js_quote(s):
+    """Escape a string value for single-quoted JavaScript."""
+    return s.replace('\\', '\\\\').replace("'", "\\'").replace('\n', ' ').replace('\r', '')
+
+
+def generate_news_summary(item):
+    """Ask Gemini for a short JSON summary suitable for updatesData.js."""
+    try:
+        import google.generativeai as genai
+    except ImportError:
+        return None
+
+    if not GEMINI_API_KEY:
+        return None
+
+    source_type = 'Indian CA YouTube channel' if item['type'] == 'youtube' else 'Indian government website'
+    context = item.get('summary', '')[:600]
+
+    prompt = f"""You are summarising news for Indian CAs and accountants who use Tally.
+
+SOURCE: {item['source']} ({source_type})
+HEADLINE: {item['title']}
+CONTEXT: {context if context else '(headline only — write based on the headline)'}
+
+Write a concise update summary. Return ONLY a JSON object (no markdown, no extra text):
+{{
+  "title": "Improved headline — plain English, max 100 chars",
+  "summary": "3-4 sentences: what happened, why it matters, who is affected. Simple English, no jargon.",
+  "tallyImpact": "1-2 sentences on what Tally/accounting users specifically need to do or check."
+}}
+
+Rules:
+- Never name competitors
+- Never say "we" — this is a news summary, not a Synergy Automation promotion
+- Keep tallyImpact practical: specific ledger, voucher type, or report name if relevant
+"""
+
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    try:
+        resp = model.generate_content(
+            prompt,
+            generation_config=genai.GenerationConfig(max_output_tokens=400, temperature=0.4)
+        )
+        raw = resp.text.strip()
+        # Strip markdown code fences if present
+        raw = re.sub(r'^```(?:json)?\s*', '', raw)
+        raw = re.sub(r'\s*```$', '', raw)
+        return json.loads(raw)
+    except Exception as e:
+        print(f'  Summary generation error: {e}')
+        return None
+
+
+def append_to_updates_file(item, summary):
+    """Append one entry to updatesData.js before the closing ];"""
+    if not UPDATES_DATA_FILE.exists():
+        print(f'  ERROR: {UPDATES_DATA_FILE} not found')
+        return False
+
+    content = UPDATES_DATA_FILE.read_text(encoding='utf-8')
+    insert_pos = content.rfind('];')
+    if insert_pos == -1:
+        print('  ERROR: updatesData.js format unexpected — cannot find ];')
+        return False
+
+    # Build a unique id
+    safe_src = re.sub(r'[^a-z0-9]+', '-', item['source'].lower())[:18].strip('-')
+    safe_date = item.get('published', TODAY)
+    safe_title = re.sub(r'[^a-z0-9]+', '-', summary['title'].lower())[:28].strip('-')
+    entry_id = f"{safe_src}-{safe_date[:10]}-{safe_title}"
+
+    entry = f"""  {{
+    id: '{entry_id}',
+    type: '{item['type']}',
+    title: '{_js_quote(summary['title'])}',
+    source: '{_js_quote(item['source'])}',
+    date: '{safe_date[:10]}',
+    summary: '{_js_quote(summary['summary'])}',
+    url: '{_js_quote(item.get('url', ''))}',
+    tallyImpact: '{_js_quote(summary['tallyImpact'])}',
+  }},
+"""
+
+    new_content = content[:insert_pos] + entry + content[insert_pos:]
+    UPDATES_DATA_FILE.write_text(new_content, encoding='utf-8')
+    return True
+
+
+def run_monitor_auto(mode='all'):
+    """Non-interactive: find new items, generate summaries, write to updatesData.js."""
+    seen = load_seen()
+    all_found = []
+
+    if mode in ('all', 'channels-only'):
+        print('Checking CA YouTube channels...')
+        ch_items = check_ca_channels(seen)
+        print(f'  {len(ch_items)} new relevant video(s)')
+        all_found.extend(ch_items)
+
+    if mode in ('all', 'govt-only'):
+        print('Checking government websites...')
+        govt_items = check_govt_feeds(seen)
+        print(f'  {len(govt_items)} new relevant update(s)')
+        all_found.extend(govt_items)
+
+    save_seen(seen)
+
+    if not all_found:
+        print('Nothing new today.')
+        LAST_COUNT_FILE.write_text('0', encoding='utf-8')
+        return
+
+    print(f'\n=== {len(all_found)} NEW ITEM(S) — generating summaries ===')
+    added = 0
+    for item in all_found:
+        print(f'\n  [{item["source"]}] {item["title"][:80]}')
+        summary = generate_news_summary(item)
+        if not summary:
+            print('  Summary failed — skipping.')
+            continue
+        ok = append_to_updates_file(item, summary)
+        if ok:
+            print(f'  ✓ Added: {summary["title"][:70]}')
+            added += 1
+        else:
+            print('  ERROR writing to updatesData.js')
+
+    LAST_COUNT_FILE.write_text(str(added), encoding='utf-8')
+    print(f'\n✅ {added} update(s) written to updatesData.js')
+
+
 def main():
     args = sys.argv[1:]
-    if '--govt-only' in args:
-        run_monitor('govt-only')
-    elif '--channels-only' in args:
-        run_monitor('channels-only')
+    auto = '--auto' in args
+    args = [a for a in args if a != '--auto']
+
+    if auto:
+        if '--govt-only' in args:
+            run_monitor_auto('govt-only')
+        elif '--channels-only' in args:
+            run_monitor_auto('channels-only')
+        else:
+            run_monitor_auto('all')
     else:
-        run_monitor('all')
+        if '--govt-only' in args:
+            run_monitor('govt-only')
+        elif '--channels-only' in args:
+            run_monitor('channels-only')
+        else:
+            run_monitor('all')
 
 
 if __name__ == '__main__':
