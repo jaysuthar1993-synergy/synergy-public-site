@@ -69,14 +69,9 @@ jobs:
           git add src/data/updatesData.js scripts/seo_news_seen.json
           git diff --cached --quiet || git commit -m "feat(seo): add $COUNT news updates ($TODAY)"
           git push origin "$BRANCH"
+          printf "Auto-generated news summaries.\n\n$COUNT new item(s) added to src/data/updatesData.js.\n\nReview: check summaries are accurate and tallyImpact is practical.\nMerge to develop to preview, then develop to master to go live on synergyfuturecorp.com/updates." > /tmp/pr_body.txt
           gh pr create \
             --title "SEO News: $COUNT new update(s) ($TODAY)" \
-            --body "Auto-generated summaries from government RSS feeds and CA YouTube channels.
-
-**$COUNT new item(s)** added to \`src/data/updatesData.js\`.
-
-**Review:** Check that summaries are accurate and the tallyImpact field is practical.
-**Merge to develop** → preview on Cloudflare staging.
-**Merge develop → master** → live on synergyfuturecorp.com/updates." \
+            --body-file /tmp/pr_body.txt \
             --base develop \
             --head "$BRANCH"

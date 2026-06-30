@@ -60,10 +60,9 @@ jobs:
           git add src/data/blogData.js
           git commit -m "feat(seo): add article $SLUG"
           git push origin "$BRANCH"
+          printf 'Auto-generated SEO article.\n\nReview `src/data/blogData.js` before merging.\nMerge to develop to preview, then develop to master to go live on synergyfuturecorp.com.' > /tmp/pr_body.txt
           gh pr create \
             --title "SEO: $SLUG" \
-            --body "Auto-generated SEO article. Review the content in \`src/data/blogData.js\` before merging.
-
-**Merge to develop** to preview. **Merge develop → master** to go live on synergyfuturecorp.com." \
+            --body-file /tmp/pr_body.txt \
             --base develop \
             --head "$BRANCH"
