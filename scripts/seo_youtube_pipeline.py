@@ -513,8 +513,11 @@ def run_pipeline(topic, provider='gemini', auto=False):
 
     usable = [v for v in videos if v['transcript']]
     if not usable:
-        print('No transcripts available for this topic. Skipping.')
-        return False
+        # Fallback: use video titles + descriptions as research context
+        print('No transcripts available. Falling back to titles/descriptions...')
+        for v in videos:
+            v['transcript'] = f"Video title: {v['title']}\nDescription: {v['description']}"
+        usable = videos
 
     print(f'\n✍️  Generating article via {provider} from {len(usable)} video(s)...')
     article_js = generate_article(topic, usable, provider=provider)
