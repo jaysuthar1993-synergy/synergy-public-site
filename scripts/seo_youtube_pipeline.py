@@ -6,12 +6,19 @@ Finds YouTube videos on a topic → extracts transcripts → generates original
 blog article → shows preview for approval → auto-publishes.
 
 AI PROVIDER (pick one — default is Gemini Flash which is FREE):
-  --ai gemini    Gemini 1.5 Flash (FREE, 1500 articles/day) ← DEFAULT
+  --ai gemini    Gemini 2.0 Flash (FREE, 1500 articles/day) ← DEFAULT
   --ai openai    GPT-4o-mini (~₹0.20/article)
   --ai claude    Claude claude-sonnet-4-6 (~₹4.50/article)
 
+TRANSCRIPT STRATEGY (automatic, in order of priority):
+  1. YouTube Transcript API — English captions (fastest)
+  2. YouTube Transcript API — Hindi auto-captions (many Tally videos are Hindi-only)
+  3. Gemini Video Analysis  — Gemini reads the YouTube video directly via URL
+                              Works for captionless/Hindi videos. Free: 8 hrs/day.
+  4. Title + description    — Last resort if all above fail
+
 SETUP (one time):
-  pip install google-api-python-client youtube-transcript-api google-generativeai
+  pip install google-api-python-client youtube-transcript-api google-generativeai google-genai
 
 OPTIONAL (if using OpenAI or Claude instead):
   pip install openai anthropic
@@ -129,12 +136,15 @@ def get_transcript(video_id, max_chars=5000):
         sys.exit(1)
 
     try:
-        # Try English first, then any available
+        # Try English first, then Hindi auto-captions (common for Tally tutorial channels)
         try:
             transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
         except Exception:
-            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
-            transcript = transcript_list.find_generated_transcript(['en', 'hi']).fetch()
+            try:
+                transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+                transcript = transcript_list.find_generated_transcript(['en', 'hi']).fetch()
+            except Exception:
+                return None
 
         text = ' '.join(t['text'] for t in transcript)
         # Clean auto-generated artifacts
@@ -143,6 +153,49 @@ def get_transcript(video_id, max_chars=5000):
         return text[:max_chars]
 
     except Exception:
+        return None
+
+
+def get_content_via_gemini_video(video_id, video_title):
+    """
+    Gemini reads the YouTube video directly — no captions or download needed.
+    Handles Hindi-only videos. Free tier: 8 hrs of video/day.
+    Uses google-genai SDK (newer, supports from_uri for YouTube URLs).
+    """
+    try:
+        from google import genai
+        from google.genai import types
+    except ImportError:
+        return None
+
+    if not GEMINI_API_KEY:
+        return None
+
+    video_url = f"https://www.youtube.com/watch?v={video_id}"
+
+    try:
+        client = genai.Client(api_key=GEMINI_API_KEY)
+        response = client.models.generate_content(
+            model='gemini-2.0-flash-lite',
+            contents=[
+                types.Part.from_uri(
+                    file_uri=video_url,
+                    mime_type='video/mp4',
+                ),
+                (
+                    f"Video title: {video_title}\n"
+                    "This is a Tally accounting tutorial for Indian CAs/accountants (may be in Hindi). "
+                    "Extract all educational content and write it in clear English: the main topic, "
+                    "every step of the process shown (with exact Tally menu paths and field names if "
+                    "visible), shortcuts and tips mentioned, common mistakes discussed, and any Indian "
+                    "accounting context (GST, ledger types, voucher types, etc.). "
+                    "Write 400-600 words. Be specific — name exact buttons, menu items, and fields."
+                )
+            ]
+        )
+        return response.text.strip()
+    except Exception as e:
+        print(f"    Gemini video analysis error: {e}")
         return None
 
 
@@ -513,11 +566,19 @@ def run_pipeline(topic, provider='gemini', auto=False):
 
     usable = [v for v in videos if v['transcript']]
     if not usable:
-        # Fallback: use video titles + descriptions as research context
-        print('No transcripts available. Falling back to titles/descriptions...')
-        for v in videos:
-            v['transcript'] = f"Video title: {v['title']}\nDescription: {v['description']}"
-        usable = videos
+        # Stage 3: Gemini reads each YouTube video directly (handles Hindi, no captions needed)
+        print('No captions found. Trying Gemini direct video analysis...')
+        for v in videos[:3]:  # Limit to 3 to stay within free-tier rate limits
+            print(f'  Analyzing: {v["title"][:60]}...')
+            content = get_content_via_gemini_video(v['id'], v['title'])
+            if content:
+                v['transcript'] = content
+                print(f'    ✓ {len(content)} chars extracted by Gemini')
+            else:
+                # Stage 4: Last resort — title + description only
+                v['transcript'] = f"Video title: {v['title']}\nDescription: {v['description']}"
+                print(f'    ✗ Using title/description only')
+        usable = videos[:3]
 
     print(f'\n✍️  Generating article via {provider} from {len(usable)} video(s)...')
     article_js = generate_article(topic, usable, provider=provider)
