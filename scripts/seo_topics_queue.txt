@@ -85,3 +85,25 @@ pdf bank statement tally import
 csv bank statement tally prime
 bulk bank entries tally import
 tally xml import bank statement guide
+
+# === BATCH 13: Trending / High-view 2025-2026 ===
+tds return filing tally prime 2025
+gst e-invoice tally prime setup
+tally prime 6.0 new features 2025
+smart bank reconciliation tally prime 6.0
+payroll processing tally prime step by step
+gst itc mismatch fix tally 2025
+tally prime vs tally erp 9 which is better
+tally prime shortcut keys CA guide
+tally prime multi currency bank entry
+tally prime data backup restore guide
+tally prime audit features CA
+gst 3b filing from tally prime 2025
+income tax payment tally prime entry
+advance tax payment tally entry
+tcs entry tally prime 2025
+tally prime outstanding report bank
+purchase order tally prime workflow
+tally prime inventory with bank
+tds on rent tally prime entry
+gst rcm entry tally prime bank
