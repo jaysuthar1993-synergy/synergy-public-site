@@ -176,7 +176,7 @@ def get_content_via_gemini_video(video_id, video_title):
     try:
         client = genai.Client(api_key=GEMINI_API_KEY)
         response = client.models.generate_content(
-            model='gemini-1.5-flash',
+            model='gemini-2.5-flash-lite',
             contents=[
                 types.Part.from_uri(
                     file_uri=video_url,
@@ -339,7 +339,7 @@ def _generate_gemini(prompt):
     client = genai.Client(api_key=GEMINI_API_KEY)
     try:
         response = client.models.generate_content(
-            model='gemini-1.5-flash',
+            model='gemini-2.5-flash-lite',
             contents=prompt,
             config=types.GenerateContentConfig(max_output_tokens=4000, temperature=0.7)
         )
