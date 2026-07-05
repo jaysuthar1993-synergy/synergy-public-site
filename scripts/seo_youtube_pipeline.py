@@ -176,7 +176,7 @@ def get_content_via_gemini_video(video_id, video_title):
     try:
         client = genai.Client(api_key=GEMINI_API_KEY)
         response = client.models.generate_content(
-            model='gemini-2.0-flash-lite',
+            model='gemini-1.5-flash',
             contents=[
                 types.Part.from_uri(
                     file_uri=video_url,
@@ -324,7 +324,7 @@ def generate_article(topic, videos_with_transcript, provider='gemini'):
 
 
 def _generate_gemini(prompt):
-    """FREE — Gemini 2.0 Flash Lite. 1,500 articles/day limit. Get key: aistudio.google.com"""
+    """FREE — Gemini 1.5 Flash. 1,500 requests/day free tier. Get key: aistudio.google.com"""
     try:
         from google import genai
         from google.genai import types
@@ -337,12 +337,16 @@ def _generate_gemini(prompt):
         sys.exit(1)
 
     client = genai.Client(api_key=GEMINI_API_KEY)
-    response = client.models.generate_content(
-        model='gemini-2.0-flash-lite',
-        contents=prompt,
-        config=types.GenerateContentConfig(max_output_tokens=4000, temperature=0.7)
-    )
-    return response.text.strip()
+    try:
+        response = client.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(max_output_tokens=4000, temperature=0.7)
+        )
+        return response.text.strip()
+    except Exception as e:
+        print(f"ERROR: Gemini generation failed: {e}")
+        sys.exit(1)
 
 
 def _generate_openai(prompt):
