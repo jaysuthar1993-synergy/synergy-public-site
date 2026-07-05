@@ -18,7 +18,7 @@ TRANSCRIPT STRATEGY (automatic, in order of priority):
   4. Title + description    — Last resort if all above fail
 
 SETUP (one time):
-  pip install google-api-python-client youtube-transcript-api google-generativeai google-genai
+  pip install google-api-python-client youtube-transcript-api google-genai
 
 OPTIONAL (if using OpenAI or Claude instead):
   pip install openai anthropic
@@ -324,23 +324,23 @@ def generate_article(topic, videos_with_transcript, provider='gemini'):
 
 
 def _generate_gemini(prompt):
-    """FREE — Gemini 1.5 Flash. 1,500 articles/day limit. Get key: aistudio.google.com"""
+    """FREE — Gemini 2.0 Flash Lite. 1,500 articles/day limit. Get key: aistudio.google.com"""
     try:
-        import google.generativeai as genai
+        from google import genai
+        from google.genai import types
     except ImportError:
-        print("ERROR: Run: pip install google-generativeai")
+        print("ERROR: Run: pip install google-genai")
         sys.exit(1)
 
-    key = GEMINI_API_KEY
-    if not key:
+    if not GEMINI_API_KEY:
         print("ERROR: Set GEMINI_API_KEY — get free key at aistudio.google.com (no credit card)")
         sys.exit(1)
 
-    genai.configure(api_key=key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
-    response = model.generate_content(
-        prompt,
-        generation_config=genai.GenerationConfig(max_output_tokens=4000, temperature=0.7)
+    client = genai.Client(api_key=GEMINI_API_KEY)
+    response = client.models.generate_content(
+        model='gemini-2.0-flash-lite',
+        contents=prompt,
+        config=types.GenerateContentConfig(max_output_tokens=4000, temperature=0.7)
     )
     return response.text.strip()
 
