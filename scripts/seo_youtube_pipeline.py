@@ -590,7 +590,7 @@ def run_pipeline(topic, provider='gemini', auto=False):
                 # Stage 4: Last resort — title + description only
                 v['transcript'] = f"Video title: {v['title']}\nDescription: {v['description']}"
                 print(f'    ✗ Using title/description only')
-        usable = videos[:3]
+        usable = [v for v in videos if v.get('transcript')]
 
     print(f'\n✍️  Generating article via {provider} from {len(usable)} video(s)...')
     article_js = generate_article(topic, usable, provider=provider)
