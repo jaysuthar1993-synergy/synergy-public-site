@@ -52,6 +52,15 @@ import time
 from datetime import date
 from pathlib import Path
 
+# Load .env file if present (local development)
+_env_file = Path(__file__).parent.parent / '.env'
+if _env_file.exists():
+    for _line in _env_file.read_text(encoding='utf-8').splitlines():
+        _line = _line.strip()
+        if _line and not _line.startswith('#') and '=' in _line:
+            _k, _, _v = _line.partition('=')
+            os.environ.setdefault(_k.strip(), _v.strip().strip('"').strip("'"))
+
 # ─────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────
@@ -452,7 +461,7 @@ def show_preview(topic, article_js, videos):
 # ─────────────────────────────────────────────
 # STEP 5 — PUBLISH
 # ─────────────────────────────────────────────
-def publish_article(article_js, commit=True):
+def publish_article(article_js, commit=True, push=False):
     """Write article to all files. commit=False skips git (GitHub Actions commits separately)."""
     slug_match = re.search(r"slug:\s*'([^']+)'", article_js)
     if not slug_match:
@@ -499,8 +508,26 @@ def publish_article(article_js, commit=True):
         print(f'  WARNING: git commit issue: {result.stderr}')
 
     print(f'\n✅ Done! /blog/{slug} is ready.')
-    print('Next step: git push origin develop')
-    print('Then merge develop → main to go live on Netlify.')
+
+    if push:
+        branch_result = subprocess.run(
+            ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+            cwd=REPO_ROOT, capture_output=True, text=True
+        )
+        branch = branch_result.stdout.strip() or 'develop'
+        push_result = subprocess.run(
+            ['git', 'push', 'origin', branch],
+            cwd=REPO_ROOT, capture_output=True, text=True
+        )
+        if push_result.returncode == 0:
+            print(f'  ✓ Pushed to origin/{branch}')
+            print(f'  → Live at synergyfuturecorp.com/blog/{slug} after Netlify deploys (~1 min)')
+        else:
+            print(f'  WARNING: git push failed: {push_result.stderr}')
+            print(f'  Run manually: git push origin {branch}')
+    else:
+        print('Next step: git push origin develop')
+        print('Then merge develop → master to go live on synergyfuturecorp.com')
     return True
 
 
@@ -564,7 +591,7 @@ def mark_topic_done(topic):
 # ─────────────────────────────────────────────
 # MAIN
 # ─────────────────────────────────────────────
-def run_pipeline(topic, provider='gemini', auto=False):
+def run_pipeline(topic, provider='gemini', auto=False, push=False):
     """
     auto=True  — no interactive prompt, just write files (used by GitHub Actions).
                  Caller is responsible for committing/PR after this returns True.
@@ -610,7 +637,7 @@ def run_pipeline(topic, provider='gemini', auto=False):
         choice = show_preview(topic, article_js, videos)
 
         if choice == 'y':
-            success = publish_article(article_js)
+            success = publish_article(article_js, push=push)
             return success
 
         elif choice == 'n':
@@ -645,7 +672,12 @@ def main():
     if auto:
         args = [a for a in args if a != '--auto']
 
-    print(f'AI provider: {provider}{"  [AUTO MODE]" if auto else ""}')
+    # Parse --push flag (auto-push to GitHub after commit, local use)
+    push = '--push' in args
+    if push:
+        args = [a for a in args if a != '--push']
+
+    print(f'AI provider: {provider}{"  [AUTO MODE]" if auto else ""}{"  [AUTO-PUSH]" if push else ""}')
 
     # --publish path/to/draft.js
     if args and args[0] == '--publish':
@@ -659,7 +691,7 @@ def main():
     if args and args[0] == '--queue':
         topic = get_next_topic_from_queue()
         print(f'📋 Next topic from queue: "{topic}"')
-        success = run_pipeline(topic, provider=provider, auto=auto)
+        success = run_pipeline(topic, provider=provider, auto=auto, push=push)
         if success:
             mark_topic_done(topic)
         return
@@ -674,7 +706,7 @@ def main():
         print('No topic provided.')
         sys.exit(1)
 
-    run_pipeline(topic, provider=provider, auto=auto)
+    run_pipeline(topic, provider=provider, auto=auto, push=push)
 
 
 if __name__ == '__main__':
