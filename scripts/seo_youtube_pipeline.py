@@ -173,31 +173,38 @@ def get_content_via_gemini_video(video_id, video_title):
         return None
 
     video_url = f"https://www.youtube.com/watch?v={video_id}"
+    client = genai.Client(api_key=GEMINI_API_KEY)
 
-    try:
-        client = genai.Client(api_key=GEMINI_API_KEY)
-        response = client.models.generate_content(
-            model='gemini-2.5-flash-lite',
-            contents=[
-                types.Part.from_uri(
-                    file_uri=video_url,
-                    mime_type='video/mp4',
-                ),
-                (
-                    f"Video title: {video_title}\n"
-                    "This is a Tally accounting tutorial for Indian CAs/accountants (may be in Hindi). "
-                    "Extract all educational content and write it in clear English: the main topic, "
-                    "every step of the process shown (with exact Tally menu paths and field names if "
-                    "visible), shortcuts and tips mentioned, common mistakes discussed, and any Indian "
-                    "accounting context (GST, ledger types, voucher types, etc.). "
-                    "Write 400-600 words. Be specific — name exact buttons, menu items, and fields."
-                )
-            ]
-        )
-        return response.text.strip()
-    except Exception as e:
-        print(f"    Gemini video analysis error: {e}")
-        return None
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.5-flash-lite',
+                contents=[
+                    types.Part.from_uri(
+                        file_uri=video_url,
+                        mime_type='video/mp4',
+                    ),
+                    (
+                        f"Video title: {video_title}\n"
+                        "This is a Tally accounting tutorial for Indian CAs/accountants (may be in Hindi). "
+                        "Extract all educational content and write it in clear English: the main topic, "
+                        "every step of the process shown (with exact Tally menu paths and field names if "
+                        "visible), shortcuts and tips mentioned, common mistakes discussed, and any Indian "
+                        "accounting context (GST, ledger types, voucher types, etc.). "
+                        "Write 400-600 words. Be specific — name exact buttons, menu items, and fields."
+                    )
+                ]
+            )
+            return response.text.strip()
+        except Exception as e:
+            err = str(e)
+            if ('429' in err or '503' in err) and attempt < 2:
+                wait = 30 + attempt * 30
+                print(f"    Gemini video error ({err[:60]}) — retrying in {wait}s ({attempt+1}/3)...")
+                time.sleep(wait)
+            else:
+                print(f"    Gemini video analysis error: {e}")
+                return None
 
 
 # ─────────────────────────────────────────────
@@ -348,9 +355,9 @@ def _generate_gemini(prompt):
             return response.text.strip()
         except Exception as e:
             err = str(e)
-            if '429' in err and attempt < 2:
+            if ('429' in err or '503' in err) and attempt < 2:
                 wait = 40 + attempt * 20
-                print(f'  Rate limit — waiting {wait}s before retry ({attempt+1}/3)...')
+                print(f'  Gemini busy ({err[:60]}) — waiting {wait}s before retry ({attempt+1}/3)...')
                 time.sleep(wait)
             else:
                 print(f'ERROR: Gemini generation failed: {e}')
