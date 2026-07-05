@@ -48,6 +48,7 @@ import sys
 import json
 import re
 import subprocess
+import time
 from datetime import date
 from pathlib import Path
 
@@ -337,16 +338,23 @@ def _generate_gemini(prompt):
         sys.exit(1)
 
     client = genai.Client(api_key=GEMINI_API_KEY)
-    try:
-        response = client.models.generate_content(
-            model='gemini-2.5-flash-lite',
-            contents=prompt,
-            config=types.GenerateContentConfig(max_output_tokens=4000, temperature=0.7)
-        )
-        return response.text.strip()
-    except Exception as e:
-        print(f"ERROR: Gemini generation failed: {e}")
-        sys.exit(1)
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.5-flash-lite',
+                contents=prompt,
+                config=types.GenerateContentConfig(max_output_tokens=4000, temperature=0.7)
+            )
+            return response.text.strip()
+        except Exception as e:
+            err = str(e)
+            if '429' in err and attempt < 2:
+                wait = 40 + attempt * 20
+                print(f'  Rate limit — waiting {wait}s before retry ({attempt+1}/3)...')
+                time.sleep(wait)
+            else:
+                print(f'ERROR: Gemini generation failed: {e}')
+                sys.exit(1)
 
 
 def _generate_openai(prompt):
@@ -572,7 +580,7 @@ def run_pipeline(topic, provider='gemini', auto=False):
     if not usable:
         # Stage 3: Gemini reads each YouTube video directly (handles Hindi, no captions needed)
         print('No captions found. Trying Gemini direct video analysis...')
-        for v in videos[:3]:  # Limit to 3 to stay within free-tier rate limits
+        for v in videos[:1]:  # 1 video — keeps per-minute token usage low for article generation
             print(f'  Analyzing: {v["title"][:60]}...')
             content = get_content_via_gemini_video(v['id'], v['title'])
             if content:
