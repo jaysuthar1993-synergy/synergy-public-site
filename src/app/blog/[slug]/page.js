@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getBlogPost, blogPosts } from '@/data/blogData';
 import '../../../components/BlogPage.css';
+import ShareBar from '../../../components/ShareBar';
 
 const APP_URL = 'https://app.synergyfuturecorp.com';
 
@@ -32,8 +33,10 @@ function renderContent(blocks) {
     switch (block.type) {
       case 'intro':
         return <p key={i} className="blog-intro">{block.text}</p>;
-      case 'h2':
-        return <h2 key={i}>{block.text}</h2>;
+      case 'h2': {
+        const id = block.text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        return <h2 key={i} id={id}>{block.text}</h2>;
+      }
       case 'h3':
         return <h3 key={i}>{block.text}</h3>;
       case 'p':
@@ -82,12 +85,19 @@ function renderContent(blocks) {
           <div key={i} className="blog-infographic blog-infographic-steps">
             <h3 className="blog-infographic-title">{block.title}</h3>
             <div className="blog-infographic-grid">
-              {block.items.map((item, j) => (
-                <div key={j} className="blog-infographic-step">
-                  <span className="blog-infographic-num">{j + 1}</span>
-                  <p>{item}</p>
-                </div>
-              ))}
+              {block.items.map((item, j) => {
+                const text = typeof item === 'string' ? item : item.text;
+                const href = typeof item === 'object' && item.href ? item.href : null;
+                return (
+                  <div key={j} className="blog-infographic-step">
+                    <span className="blog-infographic-num">{j + 1}</span>
+                    {href
+                      ? <a href={href} className="blog-infographic-link"><p>{text}</p></a>
+                      : <p>{text}</p>
+                    }
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
@@ -173,10 +183,16 @@ export default function BlogPostPage({ params }) {
         <div className="blog-post-header">
           <span className="blog-list-tag">{post.tag}</span>
           <h1 className="blog-post-title">{post.title}</h1>
-          <p className="blog-post-meta">
-            By Synergy Automation Team ·{' '}
-            {new Date(post.published).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-          </p>
+          <div className="blog-post-meta-row">
+            <p className="blog-post-meta">
+              By Synergy Automation Team ·{' '}
+              {new Date(post.published).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+            <ShareBar
+              url={`https://synergyfuturecorp.com/blog/${post.slug}`}
+              title={post.title}
+            />
+          </div>
         </div>
 
         <article className="blog-post-body">

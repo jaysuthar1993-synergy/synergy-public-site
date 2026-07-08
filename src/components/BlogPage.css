@@ -165,11 +165,64 @@
   margin: 12px 0 12px 0;
   line-height: 1.35;
 }
+.blog-post-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 6px;
+}
 .blog-post-meta {
   font-size: 14px;
   color: #999;
   margin: 0;
 }
+
+/* Share bar */
+.blog-share-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.blog-share-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.blog-share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.blog-share-btn:hover { opacity: 0.82; }
+.share-wa  { background: #25d366; color: #fff; }
+.share-x   { background: #000; color: #fff; }
+.share-li  { background: #0077b5; color: #fff; }
+.share-copy { background: #f1f3f5; color: #333; font-family: inherit; }
+
+/* Infographic anchor links */
+.blog-infographic-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.blog-infographic-link:hover p {
+  color: #6366f1;
+  text-decoration: underline;
+}
+
 .blog-post-body {
   line-height: 1.8;
   color: #333;
