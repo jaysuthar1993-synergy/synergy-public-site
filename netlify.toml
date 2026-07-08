@@ -5,10 +5,10 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Branch-based deploys
-# main    → synergyfuturecorp.com       (production)
-# staging → staging--synergy-public.netlify.app
-# develop → develop--synergy-public.netlify.app
+# NOTE: Site is hosted on Cloudflare Pages (not Netlify — this file kept for reference only)
+# Branch preview URLs:
+# main/master → synergyfuturecorp.com
+# develop     → https://develop.synergy-public-site.pages.dev/
 
 [context.production]
   command = "npm run build"

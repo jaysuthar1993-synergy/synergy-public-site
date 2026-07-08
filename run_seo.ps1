@@ -88,6 +88,6 @@ if ($exitCode -ne 0) {
 if ($dry) {
     Write-Host "Dry run complete — no push." -ForegroundColor Yellow
 } else {
-    Write-Host "Done! Pushed to GitHub → Netlify deploys in ~1 min." -ForegroundColor Green
+    Write-Host "Done! Pushed to GitHub → Cloudflare Pages deploys in ~1 min." -ForegroundColor Green
     Write-Host "Live at: https://synergyfuturecorp.com/blog/" -ForegroundColor Cyan
 }

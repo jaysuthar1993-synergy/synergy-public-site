@@ -852,7 +852,7 @@ def publish_article(article_js, commit=True, push=False):
         )
         if push_result.returncode == 0:
             print(f'  ✓ Pushed to origin/{branch}')
-            print(f'  → Live at synergyfuturecorp.com/blog/{slug} after Netlify deploys (~1 min)')
+            print(f'  → Live at synergyfuturecorp.com/blog/{slug} after Cloudflare Pages deploys (~1 min)')
         else:
             print(f'  WARNING: git push failed: {push_result.stderr}')
             print(f'  Run manually: git push origin {branch}')
