@@ -515,16 +515,18 @@ def publish_article(article_js, commit=True, push=False):
 
     # ── blogData.js ──
     blog_data = BLOG_DATA_FILE.read_text(encoding='utf-8')
-    if blog_data.rstrip().endswith('];'):
-        new_blog_data = blog_data.rstrip()[:-2].rstrip()
-        if not new_blog_data.rstrip().endswith(','):
-            new_blog_data += ','
-        new_blog_data += f'\n  {article_js}\n];\n'
-        BLOG_DATA_FILE.write_text(new_blog_data, encoding='utf-8')
-        print('  ✓ blogData.js updated')
-    else:
-        print('  ERROR: blogData.js format unexpected. Save as draft.')
+    # Find the closing ]; of the array (file may have functions after it)
+    close_idx = blog_data.rfind('\n];')
+    if close_idx == -1:
+        print('  ERROR: blogData.js format unexpected — cannot find closing ];')
         return False
+    chunk_before = blog_data[:close_idx].rstrip()
+    if not chunk_before.endswith(','):
+        chunk_before += ','
+    chunk_after = blog_data[close_idx + 1:]  # keeps ]; and everything after (exports, functions)
+    new_blog_data = chunk_before + f'\n  {article_js}\n' + chunk_after
+    BLOG_DATA_FILE.write_text(new_blog_data, encoding='utf-8')
+    print('  ✓ blogData.js updated')
 
     # sitemap.js auto-generates from blogData.js — no manual update needed
 
