@@ -409,10 +409,24 @@ def get_audio_transcript_gemini(video_id, video_title):
                 'name exact buttons, menu items, and fields.'
             )
 
-            response = client.models.generate_content(
-                model=GEMINI_MODEL,
-                contents=[uploaded, prompt],
-            )
+            result = None
+            for attempt in range(3):
+                try:
+                    resp = client.models.generate_content(
+                        model=GEMINI_MODEL,
+                        contents=[uploaded, prompt],
+                    )
+                    result = resp.text.strip()
+                    break
+                except Exception as e:
+                    err = str(e)
+                    if ('429' in err or '503' in err) and attempt < 2:
+                        wait = 30 + attempt * 30
+                        print(f'    Gemini busy ({err[:50]}) — retrying in {wait}s...')
+                        time.sleep(wait)
+                    else:
+                        print(f'    Gemini audio error: {e}')
+                        break
 
             # Clean up the uploaded file from Gemini storage
             try:
@@ -420,7 +434,7 @@ def get_audio_transcript_gemini(video_id, video_title):
             except Exception:
                 pass
 
-            return response.text.strip()
+            return result
 
         except Exception as e:
             print(f'    Gemini audio error: {e}')
