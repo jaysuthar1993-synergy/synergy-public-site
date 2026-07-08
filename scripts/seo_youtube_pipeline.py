@@ -11,11 +11,11 @@ AI PROVIDER (pick one — default is Gemini Flash which is FREE):
   --ai claude    Claude claude-sonnet-4-6 (~₹4.50/article)
 
 TRANSCRIPT STRATEGY (automatic, in order of priority):
-  1. YouTube Transcript API — English captions (fastest, no API quota)
+  1. YouTube Transcript API — English captions (instant, no download)
   2. YouTube Transcript API — Hindi auto-captions (many Tally videos are Hindi-only)
-  3a. Gemini Video Analysis — Gemini reads YouTube URL directly (works for videos < ~6 min)
-  3b. Audio Download        — yt-dlp downloads audio → Gemini analyzes (any length video)
-  4. Title + description    — Last resort if all above fail
+  3. Audio Download         — yt-dlp downloads audio-only → Gemini Files API analyzes
+                              Works for any video length (no frame limit). No FFmpeg needed.
+  4. Title + description    — Last resort if audio download also fails
 
 SETUP (one time):
   pip install google-api-python-client youtube-transcript-api google-genai yt-dlp
@@ -915,26 +915,18 @@ def run_pipeline(topic, provider='gemini', auto=False, push=False):
 
     usable = [v for v in videos if v['transcript']]
     if not usable:
-        print('No captions found. Trying Gemini video analysis...')
+        # Stage 3: Audio download → Gemini Files API (works for any video length)
+        print('No captions found. Downloading audio for Gemini analysis...')
         for v in videos[:1]:
-            print(f'  Analyzing: {v["title"][:60]}...')
-
-            # Stage 3a: Gemini direct video URL (fast, works for videos < ~6 min)
-            content = get_content_via_gemini_video(v['id'], v['title'])
+            print(f'  {v["title"][:65]}')
+            content = get_audio_transcript_gemini(v['id'], v['title'])
             if content:
                 v['transcript'] = content
-                print(f'    ✓ {len(content)} chars extracted by Gemini video')
+                print(f'    ✓ {len(content)} chars extracted from audio')
             else:
-                # Stage 3b: Audio download + Gemini audio (handles any length video)
-                print('  Trying audio download...')
-                content = get_audio_transcript_gemini(v['id'], v['title'])
-                if content:
-                    v['transcript'] = content
-                    print(f'    ✓ {len(content)} chars extracted from audio')
-                else:
-                    # Stage 4: Last resort — title + description only
-                    v['transcript'] = f"Video title: {v['title']}\nDescription: {v['description']}"
-                    print(f'    ✗ Using title/description only')
+                # Stage 4: Last resort — title + description only
+                v['transcript'] = f"Video title: {v['title']}\nDescription: {v['description']}"
+                print(f'    ✗ Using title/description only')
 
         usable = [v for v in videos if v.get('transcript')]
 
