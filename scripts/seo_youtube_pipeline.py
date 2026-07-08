@@ -11,14 +11,14 @@ AI PROVIDER (pick one — default is Gemini Flash which is FREE):
   --ai claude    Claude claude-sonnet-4-6 (~₹4.50/article)
 
 TRANSCRIPT STRATEGY (automatic, in order of priority):
-  1. YouTube Transcript API — English captions (fastest)
+  1. YouTube Transcript API — English captions (fastest, no API quota)
   2. YouTube Transcript API — Hindi auto-captions (many Tally videos are Hindi-only)
-  3. Gemini Video Analysis  — Gemini reads the YouTube video directly via URL
-                              Works for captionless/Hindi videos. Free: 8 hrs/day.
+  3a. Gemini Video Analysis — Gemini reads YouTube URL directly (works for videos < ~6 min)
+  3b. Audio Download        — yt-dlp downloads audio → Gemini analyzes (any length video)
   4. Title + description    — Last resort if all above fail
 
 SETUP (one time):
-  pip install google-api-python-client youtube-transcript-api google-genai
+  pip install google-api-python-client youtube-transcript-api google-genai yt-dlp
 
 OPTIONAL (if using OpenAI or Claude instead):
   pip install openai anthropic
@@ -307,6 +307,123 @@ def get_content_via_gemini_video(video_id, video_title):
             else:
                 print(f"    Gemini video analysis error: {e}")
                 return None
+
+
+def get_audio_transcript_gemini(video_id, video_title):
+    """
+    Download audio-only with yt-dlp → upload to Gemini Files API → extract key points.
+    Avoids the 10,800-frame limit that blocks long videos in direct video analysis.
+    No FFmpeg needed — downloads native webm/m4a format from YouTube.
+    Requires: pip install yt-dlp
+    """
+    try:
+        import yt_dlp
+    except ImportError:
+        print('    Audio fallback skipped — run: pip install yt-dlp')
+        return None
+
+    try:
+        from google import genai
+        from google.genai import types
+    except ImportError:
+        return None
+
+    if not GEMINI_API_KEY:
+        return None
+
+    import tempfile
+    import glob as _glob
+
+    url = f'https://www.youtube.com/watch?v={video_id}'
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        out_template = os.path.join(tmpdir, f'{video_id}.%(ext)s')
+
+        ydl_opts = {
+            # Prefer webm (opus) or m4a — both work with Gemini, no FFmpeg needed
+            'format': 'bestaudio[ext=webm]/bestaudio[ext=m4a]/bestaudio',
+            'outtmpl': out_template,
+            'quiet': True,
+            'no_warnings': True,
+            'noprogress': True,
+        }
+
+        print('    Downloading audio...')
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+        except Exception as e:
+            print(f'    Audio download failed: {e}')
+            return None
+
+        matches = _glob.glob(os.path.join(tmpdir, f'{video_id}.*'))
+        if not matches:
+            print('    Audio file not found after download')
+            return None
+
+        audio_path = matches[0]
+        ext = audio_path.rsplit('.', 1)[-1].lower()
+        size_mb = os.path.getsize(audio_path) / (1024 * 1024)
+        print(f'    Audio: {size_mb:.1f} MB ({ext})')
+
+        mime_map = {
+            'webm': 'audio/webm',
+            'm4a': 'audio/mp4',
+            'mp4': 'audio/mp4',
+            'mp3': 'audio/mp3',
+            'ogg': 'audio/ogg',
+            'opus': 'audio/webm',
+            'wav': 'audio/wav',
+        }
+        mime_type = mime_map.get(ext, 'audio/webm')
+
+        client = genai.Client(api_key=GEMINI_API_KEY)
+
+        try:
+            print('    Uploading to Gemini...')
+            uploaded = client.files.upload(
+                path=audio_path,
+                config=types.UploadFileConfig(mime_type=mime_type),
+            )
+
+            # Wait for Gemini to finish processing the audio file (usually <10s)
+            for _ in range(20):
+                file_info = client.files.get(name=uploaded.name)
+                if file_info.state.name == 'ACTIVE':
+                    break
+                if file_info.state.name == 'FAILED':
+                    print('    Gemini file processing failed')
+                    return None
+                time.sleep(3)
+
+            prompt = (
+                f'Video title: "{video_title}"\n'
+                'This is audio from a YouTube Tally/accounting tutorial for Indian CAs '
+                '(may be in Hindi or English). '
+                'Extract all useful educational content: the main topic, every step of the '
+                'process demonstrated (with exact Tally menu paths and field names if mentioned), '
+                'shortcuts and tips, common mistakes discussed, and any Indian accounting context '
+                '(GST, TDS, voucher types, ledger names, etc.). '
+                'Write 400-600 words of structured notes in English. Be specific — '
+                'name exact buttons, menu items, and fields.'
+            )
+
+            response = client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=[uploaded, prompt],
+            )
+
+            # Clean up the uploaded file from Gemini storage
+            try:
+                client.files.delete(name=uploaded.name)
+            except Exception:
+                pass
+
+            return response.text.strip()
+
+        except Exception as e:
+            print(f'    Gemini audio error: {e}')
+            return None
 
 
 # ─────────────────────────────────────────────
@@ -798,18 +915,27 @@ def run_pipeline(topic, provider='gemini', auto=False, push=False):
 
     usable = [v for v in videos if v['transcript']]
     if not usable:
-        # Stage 3: Gemini reads each YouTube video directly (handles Hindi, no captions needed)
-        print('No captions found. Trying Gemini direct video analysis...')
-        for v in videos[:1]:  # 1 video — keeps per-minute token usage low for article generation
+        print('No captions found. Trying Gemini video analysis...')
+        for v in videos[:1]:
             print(f'  Analyzing: {v["title"][:60]}...')
+
+            # Stage 3a: Gemini direct video URL (fast, works for videos < ~6 min)
             content = get_content_via_gemini_video(v['id'], v['title'])
             if content:
                 v['transcript'] = content
-                print(f'    ✓ {len(content)} chars extracted by Gemini')
+                print(f'    ✓ {len(content)} chars extracted by Gemini video')
             else:
-                # Stage 4: Last resort — title + description only
-                v['transcript'] = f"Video title: {v['title']}\nDescription: {v['description']}"
-                print(f'    ✗ Using title/description only')
+                # Stage 3b: Audio download + Gemini audio (handles any length video)
+                print('  Trying audio download...')
+                content = get_audio_transcript_gemini(v['id'], v['title'])
+                if content:
+                    v['transcript'] = content
+                    print(f'    ✓ {len(content)} chars extracted from audio')
+                else:
+                    # Stage 4: Last resort — title + description only
+                    v['transcript'] = f"Video title: {v['title']}\nDescription: {v['description']}"
+                    print(f'    ✗ Using title/description only')
+
         usable = [v for v in videos if v.get('transcript')]
 
     mode = detect_article_mode(topic)
