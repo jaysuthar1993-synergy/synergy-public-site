@@ -73,6 +73,23 @@ DONE_FILE        = Path(__file__).parent / 'seo_topics_done.txt'
 DRAFTS_DIR       = Path(__file__).parent / 'seo_drafts'
 TODAY            = date.today().isoformat()
 SITE_URL         = 'https://synergyfuturecorp.com'
+TALLY_VERSION    = 'TallyPrime 6.0'   # update when Tally releases a new version
+
+# Topics that Synergy directly solves → use 'product' article mode
+PRODUCT_TOPIC_KEYWORDS = [
+    'bank statement', 'excel to tally', 'excel bank', 'bank reconcil',
+    'import statement', 'bank entry', 'bank import', 'statement to tally',
+    'bank posting', 'bank ledger entry',
+]
+
+# Trending YouTube search seeds — used by --trending flag
+TRENDING_QUERIES = [
+    f'tally prime {date.today().year} tutorial',
+    f'gst tally prime {date.today().year}',
+    'tally prime new feature india',
+    'tally erp accounting india latest',
+    f'tds gst tally {date.today().year}',
+]
 
 YOUTUBE_API_KEY   = os.environ.get('YOUTUBE_API_KEY')
 GEMINI_API_KEY    = os.environ.get('GEMINI_API_KEY')
@@ -133,6 +150,82 @@ def search_videos(topic, max_results=5):
                 'transcript': None
             })
     return videos
+
+
+def get_trending_topic():
+    """
+    Discover trending topic from recent high-view Tally/accounting YouTube videos.
+    Searches multiple seed queries, deduplicates, returns the top result's cleaned title.
+    """
+    try:
+        from googleapiclient.discovery import build
+        from datetime import timedelta
+    except ImportError:
+        return None
+
+    if not YOUTUBE_API_KEY:
+        print('No YOUTUBE_API_KEY — cannot discover trending topics.')
+        return None
+
+    youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
+    published_after = (date.today() - timedelta(days=45)).isoformat() + 'T00:00:00Z'
+
+    seen_ids = set()
+    candidates = []
+
+    for query in TRENDING_QUERIES[:3]:   # 3 queries = 3 API calls, keeps quota low
+        try:
+            resp = youtube.search().list(
+                part='snippet',
+                q=query,
+                type='video',
+                maxResults=5,
+                order='viewCount',
+                publishedAfter=published_after,
+                regionCode='IN',
+            ).execute()
+            for item in resp.get('items', []):
+                vid_id = item['id'].get('videoId')
+                if vid_id and vid_id not in seen_ids:
+                    seen_ids.add(vid_id)
+                    title = item['snippet']['title']
+                    channel = item['snippet']['channelTitle']
+                    # Skip official Tally Solutions promos — mostly marketing
+                    if 'tally solution' not in channel.lower():
+                        candidates.append({'id': vid_id, 'title': title, 'channel': channel})
+        except Exception as e:
+            print(f'  Warning: trending search failed for "{query}": {e}')
+
+    if not candidates:
+        return None
+
+    best = candidates[0]
+    # Clean title → topic: strip hashtags, channel suffix, episode numbers
+    topic = best['title']
+    topic = re.sub(r'#\w+', '', topic)
+    topic = re.sub(r'\|.*$', '', topic)
+    topic = re.sub(r'^\s*\d+[\.\)]\s*', '', topic)
+    topic = re.sub(r'\s+', ' ', topic).strip()
+    if len(topic) > 80:
+        topic = topic[:80].rsplit(' ', 1)[0]
+
+    print(f'  Trending video: "{best["title"][:65]}" — {best["channel"]}')
+    print(f'  Topic extracted: "{topic}"')
+    return topic
+
+
+def detect_article_mode(topic):
+    """
+    'product' — topic directly relates to what Synergy Automation does.
+                 Article features Synergy prominently.
+    'knowledge' — educational/informational topic.
+                 Article is pure knowledge, light or no product mention.
+    Roughly 1 in 4 articles should be product mode; knowledge builds trust and traffic.
+    """
+    t = topic.lower()
+    if any(kw in t for kw in PRODUCT_TOPIC_KEYWORDS):
+        return 'product'
+    return 'knowledge'
 
 
 # ─────────────────────────────────────────────
@@ -219,146 +312,189 @@ def get_content_via_gemini_video(video_id, video_title):
 # ─────────────────────────────────────────────
 # STEP 3 — BUILD PROMPT
 # ─────────────────────────────────────────────
-def build_prompt(topic, videos_with_transcript):
+def build_prompt(topic, videos_with_transcript, mode='knowledge'):
     research_text = ""
     for v in videos_with_transcript:
         research_text += f"\n\n--- VIDEO: {v['title']} (Channel: {v['channel']}) ---\n"
         research_text += v['transcript'][:2500]
 
-    return f"""You are a senior content writer for synergyfuturecorp.com. You write for Indian CAs and accountants who are busy, skeptical, and will stop reading the moment content feels generic.
-
-Synergy Automation is a FREE tool that lets Indian CAs post Excel bank statements directly to Tally Prime and Tally ERP 9 — no XML files, no manual entry.
+    # ── shared context injected into both modes ──────────────────────────────
+    shared_context = f"""TODAY: {TODAY}  |  Current Tally version: {TALLY_VERSION}  |  Site: synergyfuturecorp.com
 
 TOPIC: {topic}
+ARTICLE MODE: {mode.upper()}
 
 {BRAND_RULES}
 
-RESEARCH (YouTube content — use as INSPIRATION only, write 100% original content):
+RESEARCH (from YouTube — use as INSPIRATION only, write 100% original content):
 {research_text}
 
-━━━ READER PSYCHOLOGY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Your reader is a CA or accountant who:
-- Has 3 browser tabs open while reading this
-- Has done this task before the painful way — they KNOW the frustration
-- Will close the tab the moment they hit a vague sentence like "it saves time"
-- Trusts specifics: exact menu paths, real numbers, named mistakes
-- Relates to Indian context: GST deadlines, Tally quirks, SBI/HDFC/ICICI statements
+━━━ WRITING RULES (both modes) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Reference today's date ({TODAY}) and current year where relevant
+- All Tally references: use "{TALLY_VERSION}" as primary, mention "Tally ERP 9" where relevant
+- Sentences: max 20 words. Paragraphs: max 3 sentences.
+- NO filler openers: never "In today\\'s world", "Managing finances", "As a CA"
+- NO vague claims: never "saves time", "easy to use", "powerful" — always be SPECIFIC
+- Numbers beat adjectives: "3 hours → 8 minutes" beats "much faster"
+- Exact Tally paths: "Gateway of Tally > Display More Reports > ..." beats "open the report"
+- Indian context: GST 20th deadline, advance tax quarters (Jun/Sep/Dec/Mar), TDS 7th, year-end March 31
+- Named banks where natural: HDFC, SBI, ICICI, Axis, Kotak, PNB, Bank of Baroda
+- Second person ("you", "your") throughout — feels like advice from a senior CA
+- FAQ answers: self-contained, direct — like a WhatsApp reply, not a textbook paragraph
 
-To keep them reading:
-1. START with their specific pain — name the exact moment it hurts (month-end, GST filing day, audit)
-2. REWARD immediately — give the key insight/answer in the first paragraph, not at the end
-3. USE contrast — show the old painful way briefly, then the better way (makes the solution feel earned)
-4. EMBED pro tips in steps — one "Tally tip:" or "Watch out:" per step keeps pros engaged
-5. WRITE in second person ("you", "your") — feels like advice from a senior CA, not a blog post
-6. END sections with a micro-hook — one sentence that makes them want to read the next section
-7. FAQ answers must feel like WhatsApp replies from a CA friend — direct, no padding
+━━━ ANTI-DUPLICATE RULE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+This article MUST cover a unique angle on "{topic}". Do not repeat generic steps any CA already knows.
+Focus on the specific insight, shortcut, or mistake that is not obvious.
+If the research covers a specific {TALLY_VERSION} feature, lead with that — it is newer and more valuable.
 
-━━━ WRITING RULES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- Sentences: max 20 words. If it runs longer, split it.
-- Paragraphs: max 3 sentences. White space = readability.
-- NO filler openers: never start with "In today\\'s fast-paced world", "Managing finances", "As a CA"
-- NO vague claims: never "saves time", "easy to use", "powerful tool" — always be SPECIFIC
-- YES to numbers: "takes 3 hours manually → 8 minutes with automation" beats "saves time"
-- YES to specifics: "Go to Gateway of Tally > Banking > Bank Reconciliation" beats "open reconciliation"
-- YES to Indian context: mention GST 20th deadline, advance tax quarters, TDS 7th, year-end March 31
-- YES to named banks: HDFC, SBI, ICICI, Axis, Kotak, PNB, Bank of Baroda — wherever natural
+━━━ OUTPUT FORMAT (both modes) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Return ONLY a valid JavaScript object — no markdown fences, no export, no const, no explanation.
+Raw object only: starts with {{ ends with }}.
+Single quotes for ALL strings. Escape apostrophes as \\'.
+"""
 
-━━━ CONTENT STRUCTURE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Follow IN THIS EXACT ORDER:
+    # ── KNOWLEDGE MODE — education-first, no forced product section ───────────
+    if mode == 'knowledge':
+        return f"""You are a senior CA writing a knowledge-base article for synergyfuturecorp.com.
+Your job is to give Indian CAs genuinely useful, deep knowledge — not to sell anything.
+A reader should finish this article feeling smarter and grateful, not sold to.
 
-1. intro — Open with the SPECIFIC painful moment (not generic). Example: "It\\'s the 19th. GSTR-3B is due tomorrow. Your bank statement has 340 entries and not one is reconciled." Then: what this article solves + who benefits most. 3-4 sentences total.
+{shared_context}
 
-2. h2 + p — "What is [Topic]?" — 60-80 words. Plain English. One analogy if it helps. No jargon without definition.
+━━━ CONTENT STRUCTURE (knowledge mode) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-3. h2 + steps — "How to [Primary Action] — Step by Step" — 5-7 steps. Each step: what to do (specific) + one "Tally tip:" or "Watch out:" embedded. End this section with: "Once you\\'ve done this a few times, it takes under 10 minutes. But there are traps that trip up even experienced CAs — here\\'s what to watch."
+1. intro — Open with the specific scenario where this knowledge matters most.
+   Name the exact deadline, workflow moment, or frustration. 3-4 sentences.
+   End with: what the reader will know by the end of this article.
 
-4. h2 + list — "Common Mistakes That Cost CAs Hours" (not just "Common Mistakes") — 4-5 mistakes. Each: name the mistake → what goes wrong → exact fix. Make these feel like war stories, not textbook warnings.
+2. h2 + p — "What is [Topic]?" — 60-80 words. Plain English. One analogy.
 
-5. h2 + p — "How Synergy Automation Handles This for You" — 3-4 sentences. Connect directly to the most painful step above. Be specific about what Synergy does (upload Excel → review table → post to Tally). End with the free claim.
+3. h2 + steps — "How to [Primary Action] in {TALLY_VERSION} — Step by Step"
+   5-7 steps. Each step: exact action + one embedded "Tally tip:" or "Watch out:".
+   Include actual {TALLY_VERSION} menu paths.
 
-6. infographic — Visual summary. variant: \\'steps\\' for processes, \\'checklist\\' for tips/mistakes.
+4. h2 + list — "Mistakes That Cost Indian CAs Hours"
+   4-5 specific mistakes. Name the mistake → what breaks → exact fix.
 
-7. faq — 5 Q&As. Questions must sound like real Google/ChatGPT searches Indian CAs type. Answers: 2-3 sentences, self-contained (no "as mentioned above"), direct tone — like a WhatsApp reply from a senior CA.
+5. h2 + p — "Pro Tips for {date.today().year}" (optional Synergy mention here — max 1 sentence, natural fit only)
+   2-3 insider tips that go beyond the basic steps. Things CAs learn after months of doing this.
 
-━━━ OUTPUT FORMAT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Return ONLY a valid JavaScript object — no export, no const, no markdown fences, no explanation. Just the raw object starting with {{ and ending with }}.
-Use single quotes for ALL strings. Escape apostrophes as \\'.
+6. infographic — Visual summary (variant: \\'steps\\' or \\'checklist\\').
+
+7. faq — 5 Q&As. Questions = real searches Indian CAs type into Google or ask ChatGPT.
+   Include "How to do [topic] in {TALLY_VERSION}?" as one question.
+
+━━━ KNOWLEDGE MODE CHECKS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- steps: 5+ items with specific Tally paths ✓
+- infographic present ✓
+- faq: 5 items, all self-contained ✓
+- "Synergy Automation" mentioned 0-1 times maximum (not forced) ✓
+- No vague phrases: "saves time", "powerful", "seamless" ✗
+- No forbidden: PDF upload, LedgerMatch, duplicate detection ✗
+- Primary keyword in title + at least 1 FAQ question ✓
+- Today\\'s date ({TODAY}) and {TALLY_VERSION} referenced ✓
 
 {{
-  slug: 'url-friendly-slug-no-year',
-  title: 'Compelling Title 55-65 Chars — Include Year 2026',
+  slug: 'descriptive-slug-topic-focus',
+  title: 'Specific Title 55-65 Chars — {TALLY_VERSION} + {date.today().year}',
   tag: 'Guide',
   published: '{TODAY}',
   updated: '{TODAY}',
-  description: 'Meta description 140-160 chars. Primary keyword near start. Specific benefit. Complete sentence ending with period.',
-  keywords: 'primary keyword, secondary keyword, long-tail keyword',
+  description: '140-160 char meta. Primary keyword first. Specific benefit. Ends with period.',
+  keywords: 'primary keyword, secondary keyword, long-tail keyword india',
   content: [
-    {{
-      type: 'intro',
-      text: 'Specific painful moment opening sentence — name the exact day/deadline/frustration. Then 2-3 sentences: what this article shows you and who benefits most (Indian CAs, accountants, CA firms).'
-    }},
+    {{ type: 'intro', text: 'Specific scenario. Deadline. Pain. What you learn here.' }},
     {{ type: 'h2', text: 'What is [Topic]?' }},
-    {{ type: 'p', text: 'Plain-English definition in 60-80 words. One analogy. No unexplained jargon.' }},
-    {{ type: 'h2', text: 'How to [Primary Action] in Tally Prime — Step by Step' }},
-    {{ type: 'steps', items: [
-      'Step 1: Specific action with exact Tally path. Tally tip: shortcut or insider note here.',
-      'Step 2: Specific action. Watch out: common mistake at this exact step.',
-      'Step 3: ...',
-      'Step 4: ...',
-      'Step 5: ...'
-    ]}},
-    {{ type: 'h2', text: 'Common Mistakes That Cost CAs Hours' }},
-    {{ type: 'list', items: [
-      'Mistake name: what exactly goes wrong — specific fix in one sentence.',
-      'Mistake name: what exactly goes wrong — specific fix.',
-      'Mistake name: ...',
-      'Mistake name: ...'
-    ]}},
-    {{ type: 'h2', text: 'How Synergy Automation Handles This for You' }},
-    {{ type: 'p', text: 'Connect directly to the hardest step above. Explain what Synergy Automation does: upload your Excel bank statement, review entries in a clean table, post directly to Tally Prime or Tally ERP 9 — free, no XML files needed. End with the free claim.' }},
-    {{
-      type: 'infographic',
-      variant: 'steps',
-      title: 'Concise process title 5-7 words',
-      items: [
-        'Step label 4-6 words',
-        'Step label 4-6 words',
-        'Step label 4-6 words',
-        'Step label 4-6 words',
-        'Step label 4-6 words'
-      ]
-    }},
-    {{
-      type: 'faq',
-      items: [
-        {{ q: 'Specific question using primary keyword that CAs actually search?', a: 'Direct 2-3 sentence answer. Self-contained. No "as mentioned above". Reads like a WhatsApp reply from a senior CA.' }},
-        {{ q: 'How does [topic] work in Tally Prime vs Tally ERP 9?', a: 'Self-contained answer covering both versions.' }},
-        {{ q: 'Can Synergy Automation help with [topic]?', a: 'Self-contained answer mentioning what Synergy does for this exact topic. Mention it is free.' }},
-        {{ q: 'What is the most common mistake in [topic] for Indian CAs?', a: 'Self-contained answer with the specific mistake and fix.' }},
-        {{ q: 'How long does [topic] take in Tally Prime?', a: 'Self-contained answer with realistic time estimate — manual vs automated.' }}
-      ]
-    }}
+    {{ type: 'p', text: '60-80 words. Plain English. Analogy.' }},
+    {{ type: 'h2', text: 'How to [Action] in {TALLY_VERSION} — Step by Step' }},
+    {{ type: 'steps', items: ['Step with exact path. Tally tip: ...', 'Step. Watch out: ...', '...', '...', '...'] }},
+    {{ type: 'h2', text: 'Mistakes That Cost Indian CAs Hours' }},
+    {{ type: 'list', items: ['Mistake: what breaks → fix', '...', '...', '...'] }},
+    {{ type: 'h2', text: 'Pro Tips for {date.today().year}' }},
+    {{ type: 'p', text: '2-3 insider tips. One optional natural Synergy mention if it genuinely fits.' }},
+    {{ type: 'infographic', variant: 'steps', title: 'Process title 5-7 words', items: ['Label', 'Label', 'Label', 'Label', 'Label'] }},
+    {{ type: 'faq', items: [
+      {{ q: 'How to do [topic] in {TALLY_VERSION}?', a: 'Self-contained 2-3 sentence answer.' }},
+      {{ q: 'Real question CAs Google?', a: 'Self-contained answer.' }},
+      {{ q: 'Common mistake question?', a: 'Self-contained answer with fix.' }},
+      {{ q: '[Topic] in Tally ERP 9 vs {TALLY_VERSION}?', a: 'Self-contained answer.' }},
+      {{ q: 'Time/effort question?', a: 'Self-contained with realistic estimate.' }}
+    ]}}
   ]
 }}
+"""
 
-━━━ MANDATORY CHECKS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Before finalising, verify:
-- steps block present with 5+ items ✓
-- infographic block present ✓
-- faq block with 5 items ✓
-- "Synergy Automation" mentioned 3+ times ✓
-- No vague phrases: "saves time", "easy to use", "powerful", "seamless" ✗
-- No forbidden mentions: PDF upload, LedgerMatch, duplicate detection ✗
-- Primary keyword in title AND at least one FAQ question ✓
-- Every FAQ answer is self-contained (no "see above" / "as mentioned") ✓
+    # ── PRODUCT MODE — Synergy Automation is the hero ─────────────────────────
+    return f"""You are a senior content writer for synergyfuturecorp.com.
+Synergy Automation is a FREE tool that lets Indian CAs post Excel bank statements directly to {TALLY_VERSION} and Tally ERP 9 — no XML files, no manual entry.
+This article shows how Synergy solves a real CA pain point.
+
+{shared_context}
+
+━━━ CONTENT STRUCTURE (product mode) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. intro — The specific painful moment this topic creates. 3-4 sentences. End with: Synergy Automation solves this.
+
+2. h2 + p — "What is [Topic]?" — 60-80 words. Plain English.
+
+3. h2 + steps — "How to [Action] in {TALLY_VERSION} — Step by Step" — 5-7 steps with exact paths.
+
+4. h2 + list — "Mistakes That Cost Indian CAs Hours" — 4-5 specific mistakes + fixes.
+
+5. h2 + p — "How Synergy Automation Handles This" — Connect to the hardest step above.
+   Specific: upload Excel → review entries → post to Tally. Free. No XML. Works with {TALLY_VERSION} and ERP 9.
+
+6. infographic — Visual summary.
+
+7. faq — 5 Q&As. One must be about Synergy Automation for this topic.
+
+━━━ PRODUCT MODE CHECKS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- steps: 5+ items ✓ | infographic ✓ | faq: 5 items ✓
+- "Synergy Automation" 3+ times ✓
+- Synergy section connects to a specific step above (not generic) ✓
+- No vague: "saves time", "powerful", "seamless" ✗
+- No forbidden: PDF upload, LedgerMatch, duplicate detection ✗
+- Primary keyword in title + 1 FAQ ✓ | date {TODAY} + {TALLY_VERSION} referenced ✓
+
+{{
+  slug: 'descriptive-slug-topic',
+  title: 'Specific Title 55-65 Chars — {TALLY_VERSION} {date.today().year}',
+  tag: 'Guide',
+  published: '{TODAY}',
+  updated: '{TODAY}',
+  description: '140-160 chars. Primary keyword first. Synergy benefit. Complete sentence.',
+  keywords: 'primary keyword, bank statement tally, synergy automation tally',
+  content: [
+    {{ type: 'intro', text: 'Painful moment. Stakes. Synergy Automation solves this.' }},
+    {{ type: 'h2', text: 'What is [Topic]?' }},
+    {{ type: 'p', text: '60-80 words. Plain English.' }},
+    {{ type: 'h2', text: 'How to [Action] in {TALLY_VERSION} — Step by Step' }},
+    {{ type: 'steps', items: ['Step. Tally tip: ...', 'Step. Watch out: ...', '...', '...', '...'] }},
+    {{ type: 'h2', text: 'Mistakes That Cost Indian CAs Hours' }},
+    {{ type: 'list', items: ['Mistake → fix', '...', '...', '...'] }},
+    {{ type: 'h2', text: 'How Synergy Automation Handles This' }},
+    {{ type: 'p', text: 'Connect to hardest step. Upload Excel → review → post to Tally. Free. No XML.' }},
+    {{ type: 'infographic', variant: 'steps', title: 'Process title 5-7 words', items: ['Label', 'Label', 'Label', 'Label', 'Label'] }},
+    {{ type: 'faq', items: [
+      {{ q: 'Primary keyword question?', a: 'Self-contained answer.' }},
+      {{ q: 'Can Synergy Automation help with [topic]?', a: 'Self-contained. What it does. Free.' }},
+      {{ q: 'Tally ERP 9 vs {TALLY_VERSION} for this?', a: 'Self-contained.' }},
+      {{ q: 'Common mistake question?', a: 'Self-contained with fix.' }},
+      {{ q: 'Time comparison — manual vs Synergy?', a: 'Self-contained with realistic numbers.' }}
+    ]}}
+  ]
+}}
 """
 
 
 # ─────────────────────────────────────────────
 # STEP 3 — GENERATE ARTICLE (multi-provider)
 # ─────────────────────────────────────────────
-def generate_article(topic, videos_with_transcript, provider='gemini'):
-    prompt = build_prompt(topic, videos_with_transcript)
+def generate_article(topic, videos_with_transcript, provider='gemini', mode=None):
+    if mode is None:
+        mode = detect_article_mode(topic)
+    print(f'  Article mode: {mode}')
+    prompt = build_prompt(topic, videos_with_transcript, mode=mode)
 
     if provider == 'gemini':
         return _generate_gemini(prompt)
@@ -515,6 +651,12 @@ def publish_article(article_js, commit=True, push=False):
 
     # ── blogData.js ──
     blog_data = BLOG_DATA_FILE.read_text(encoding='utf-8')
+
+    # Duplicate check — never publish the same slug twice
+    if f"slug: '{slug}'" in blog_data or f'"slug": "{slug}"' in blog_data:
+        print(f'  SKIP: slug "{slug}" already exists in blogData.js — article not duplicated.')
+        return False
+
     # Find the closing ]; of the array (file may have functions after it)
     close_idx = blog_data.rfind('\n];')
     if close_idx == -1:
@@ -670,12 +812,13 @@ def run_pipeline(topic, provider='gemini', auto=False, push=False):
                 print(f'    ✗ Using title/description only')
         usable = [v for v in videos if v.get('transcript')]
 
-    print(f'\n✍️  Generating article via {provider} from {len(usable)} video(s)...')
-    article_js = generate_article(topic, usable, provider=provider)
+    mode = detect_article_mode(topic)
+    print(f'\n Generating article via {provider} from {len(usable)} video(s)... [mode: {mode}]')
+    article_js = generate_article(topic, usable, provider=provider, mode=mode)
 
     if auto:
-        # Non-interactive: write files, skip git commit (GitHub Actions handles that)
-        return publish_article(article_js, commit=False)
+        # commit=True when --push (local automation), commit=False for GitHub Actions
+        return publish_article(article_js, commit=push, push=push)
 
     while True:
         choice = show_preview(topic, article_js, videos)
@@ -693,8 +836,8 @@ def run_pipeline(topic, provider='gemini', auto=False, push=False):
             return False
 
         elif choice == 'r':
-            print('\n♻️  Regenerating...')
-            article_js = generate_article(topic, usable, provider=provider)
+            print('\nRegenerating...')
+            article_js = generate_article(topic, usable, provider=provider, mode=mode)
 
         else:
             print('Invalid choice. Enter y / n / s / r')
@@ -721,7 +864,7 @@ def main():
     if push:
         args = [a for a in args if a != '--push']
 
-    print(f'AI provider: {provider}{"  [AUTO MODE]" if auto else ""}{"  [AUTO-PUSH]" if push else ""}')
+    print(f'AI provider: {provider}{"  [AUTO]" if auto else ""}{"  [PUSH]" if push else ""}')
 
     # --publish path/to/draft.js
     if args and args[0] == '--publish':
@@ -731,10 +874,23 @@ def main():
         publish_from_draft(args[1])
         return
 
-    # --queue  (pick next topic from queue file)
+    # --trending  (discover topic from YouTube trending videos)
+    if args and args[0] == '--trending':
+        print('Discovering trending topic from YouTube...')
+        topic = get_trending_topic()
+        if not topic:
+            print('Could not discover trending topic. Falling back to queue.')
+            topic = get_next_topic_from_queue()
+        print(f'Topic: "{topic}"')
+        success = run_pipeline(topic, provider=provider, auto=auto, push=push)
+        if success:
+            mark_topic_done(topic)
+        return
+
+    # --queue  (pick next topic from static queue file)
     if args and args[0] == '--queue':
         topic = get_next_topic_from_queue()
-        print(f'📋 Next topic from queue: "{topic}"')
+        print(f'Queue topic: "{topic}"')
         success = run_pipeline(topic, provider=provider, auto=auto, push=push)
         if success:
             mark_topic_done(topic)

@@ -15,6 +15,12 @@
 $ErrorActionPreference = "Stop"
 $RepoRoot = $PSScriptRoot
 
+# Use system Python (not any active venv that may lack google-genai)
+$Python = "C:\Users\ADMIN\AppData\Local\Programs\Python\Python311\python.exe"
+if (-not (Test-Path $Python)) {
+    $Python = (Get-Command python -ErrorAction SilentlyContinue).Source
+}
+
 Set-Location $RepoRoot
 
 # Parse args
@@ -62,13 +68,13 @@ $pushFlag = if ($dry)  { "" } else { "--push" }
 if ($topic) {
     Write-Host "Topic: $topic" -ForegroundColor Green
     if ($auto) {
-        python scripts/seo_youtube_pipeline.py $topic $autoFlag $pushFlag
+        & $Python scripts/seo_youtube_pipeline.py $topic $autoFlag $pushFlag
     } else {
-        python scripts/seo_youtube_pipeline.py $topic $pushFlag
+        & $Python scripts/seo_youtube_pipeline.py $topic $pushFlag
     }
 } else {
-    Write-Host "Mode: next topic from queue" -ForegroundColor Green
-    python scripts/seo_youtube_pipeline.py --queue $autoFlag $pushFlag
+    Write-Host "Mode: trending YouTube topic discovery" -ForegroundColor Green
+    & $Python scripts/seo_youtube_pipeline.py --trending $autoFlag $pushFlag
 }
 
 $exitCode = $LASTEXITCODE
