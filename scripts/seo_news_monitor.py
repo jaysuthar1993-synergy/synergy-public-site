@@ -10,7 +10,7 @@ Strategy: "First mover" on regulatory/compliance updates means more backlinks
 from CA sites that pick up and cite the news.
 
 SETUP:
-  pip install google-api-python-client youtube-transcript-api google-generativeai feedparser requests beautifulsoup4
+  pip install google-api-python-client youtube-transcript-api google-genai feedparser requests beautifulsoup4
 
 ENV VARS:
   YOUTUBE_API_KEY    — free, 10,000 req/day
@@ -34,8 +34,18 @@ import sys
 import json
 import re
 import subprocess
+import time
 from datetime import date, datetime, timedelta
 from pathlib import Path
+
+# Load .env (same repo root)
+_env_file = Path(__file__).parent.parent / '.env'
+if _env_file.exists():
+    for _line in _env_file.read_text(encoding='utf-8').splitlines():
+        _line = _line.strip()
+        if _line and not _line.startswith('#') and '=' in _line:
+            _k, _, _v = _line.partition('=')
+            os.environ.setdefault(_k.strip(), _v.strip().strip('"').strip("'"))
 
 try:
     import feedparser
@@ -56,6 +66,8 @@ GEMINI_API_KEY    = os.environ.get('GEMINI_API_KEY')
 YOUTUBE_API_KEY   = os.environ.get('YOUTUBE_API_KEY')
 TODAY             = date.today().isoformat()
 SITE_URL          = 'https://synergyfuturecorp.com'
+TALLY_VERSION     = 'TallyPrime 6.0'
+GEMINI_MODEL      = 'gemini-2.5-flash-lite'
 
 # ─────────────────────────────────────────────
 # CA YOUTUBE CHANNELS TO MONITOR
@@ -312,23 +324,54 @@ def _scrape_page(feed_cfg):
 
 
 # ─────────────────────────────────────────────
-# ARTICLE GENERATION FOR NEWS ITEMS
+# GEMINI HELPER
 # ─────────────────────────────────────────────
-def generate_news_article(item):
+def _call_gemini(prompt, max_tokens=1200, temperature=0.7):
+    """Call Gemini with retry on 429/503. Returns text or None."""
     try:
-        import google.generativeai as genai
+        from google import genai
+        from google.genai import types
     except ImportError:
-        print('Run: pip install google-generativeai')
+        print('Run: pip install google-genai')
         return None
 
     if not GEMINI_API_KEY:
         print('GEMINI_API_KEY not set')
         return None
 
+    client = genai.Client(api_key=GEMINI_API_KEY)
+    for attempt in range(3):
+        try:
+            resp = client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    max_output_tokens=max_tokens,
+                    temperature=temperature,
+                ),
+            )
+            return resp.text.strip()
+        except Exception as e:
+            err = str(e)
+            if ('429' in err or '503' in err) and attempt < 2:
+                wait = 30 + attempt * 30
+                print(f'  Gemini error ({err[:60]}) — retrying in {wait}s ({attempt+1}/3)...')
+                time.sleep(wait)
+            else:
+                print(f'  Gemini error: {err}')
+                return None
+    return None
+
+
+# ─────────────────────────────────────────────
+# ARTICLE GENERATION FOR NEWS ITEMS
+# ─────────────────────────────────────────────
+def generate_news_article(item):
     source_type = 'YouTube CA channel' if item['type'] == 'youtube' else 'Indian government website'
     summary_text = item.get('summary', '')
 
     prompt = f"""You are writing an SEO blog post for synergyfuturecorp.com about Synergy Automation.
+Today is {TODAY}. Tally version in use: {TALLY_VERSION}.
 
 {BRAND_RULES}
 
@@ -340,27 +383,31 @@ CONTEXT: {summary_text[:1000] if summary_text else '(no summary available — wr
 TASK: Write a PRACTICAL blog article explaining what this update/news means for Indian CAs,
 accountants, and small business owners who use Tally for accounting.
 
-- Lead with what CHANGED and WHY it matters
-- Explain the practical impact on Tally users specifically
-- If relevant, explain how Synergy Automation helps with the bank entry / reconciliation side
-- End with clear action items for the reader
-- Include a strong FAQ block with real questions CAs would ask about this update
+WRITING RULES:
+- Hook the reader immediately — open with a real consequence or surprising fact
+- Use short paragraphs (2-3 sentences max) — keep the reader scrolling
+- Be specific: name the section/menu/report in {TALLY_VERSION} where the action happens
+- Lead with what CHANGED and WHY it matters for accountants right now
+- Explain practical impact on Tally users with concrete steps
+- End with clear action items
+- Include a strong FAQ block with questions real CAs would search for
+- NEVER duplicate an article topic — this article must cover unique ground
 
 OUTPUT FORMAT:
 Return ONLY a valid JavaScript object (no markdown, no export keyword — raw object only).
-Use single quotes for all strings. Use today's date: {TODAY}
+Use single quotes for all strings. Published date: {TODAY}
 
 Schema:
 {{
   slug: 'url-slug-here',
-  title: 'Headline 55-60 chars (2026)',
+  title: 'Headline 55-60 chars ({TODAY[:4]})',
   tag: 'News',
   published: '{TODAY}',
   updated: '{TODAY}',
   description: '140-160 char meta description. Complete sentence.',
   keywords: 'keyword1, keyword2, keyword3',
   content: [
-    {{ type: 'intro', text: '3-4 sentences. What happened, who it affects, what they should do.' }},
+    {{ type: 'intro', text: '3-4 sentences. What happened, who it affects, what they should do right now.' }},
     {{ type: 'h2', text: 'What Changed' }},
     {{ type: 'p', text: '...' }},
     {{ type: 'h2', text: 'What This Means for Tally Users' }},
@@ -381,10 +428,7 @@ Schema:
 }}
 """
 
-    genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-1.5-flash')
-    response = model.generate_content(prompt)
-    return response.text.strip()
+    return _call_gemini(prompt, max_tokens=1800, temperature=0.7)
 
 
 # ─────────────────────────────────────────────
@@ -458,18 +502,11 @@ def _js_quote(s):
 
 def generate_news_summary(item):
     """Ask Gemini for a short JSON summary suitable for updatesData.js."""
-    try:
-        import google.generativeai as genai
-    except ImportError:
-        return None
-
-    if not GEMINI_API_KEY:
-        return None
-
     source_type = 'Indian CA YouTube channel' if item['type'] == 'youtube' else 'Indian government website'
     context = item.get('summary', '')[:600]
 
     prompt = f"""You are summarising news for Indian CAs and accountants who use Tally.
+Today is {TODAY}. Tally version: {TALLY_VERSION}.
 
 SOURCE: {item['source']} ({source_type})
 HEADLINE: {item['title']}
@@ -479,29 +516,24 @@ Write a concise update summary. Return ONLY a JSON object (no markdown, no extra
 {{
   "title": "Improved headline — plain English, max 100 chars",
   "summary": "3-4 sentences: what happened, why it matters, who is affected. Simple English, no jargon.",
-  "tallyImpact": "1-2 sentences on what Tally/accounting users specifically need to do or check."
+  "tallyImpact": "1-2 sentences on what Tally/{TALLY_VERSION} users specifically need to do or check — name the exact menu/report if relevant."
 }}
 
 Rules:
 - Never name competitors
 - Never say "we" — this is a news summary, not a Synergy Automation promotion
-- Keep tallyImpact practical: specific ledger, voucher type, or report name if relevant
+- Keep tallyImpact practical and specific to {TALLY_VERSION}
 """
 
-    genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    raw = _call_gemini(prompt, max_tokens=400, temperature=0.4)
+    if not raw:
+        return None
     try:
-        resp = model.generate_content(
-            prompt,
-            generation_config=genai.GenerationConfig(max_output_tokens=400, temperature=0.4)
-        )
-        raw = resp.text.strip()
-        # Strip markdown code fences if present
         raw = re.sub(r'^```(?:json)?\s*', '', raw)
         raw = re.sub(r'\s*```$', '', raw)
         return json.loads(raw)
     except Exception as e:
-        print(f'  Summary generation error: {e}')
+        print(f'  Summary JSON parse error: {e}')
         return None
 
 
