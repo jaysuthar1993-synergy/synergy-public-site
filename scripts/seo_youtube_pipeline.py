@@ -74,6 +74,7 @@ DRAFTS_DIR       = Path(__file__).parent / 'seo_drafts'
 TODAY            = date.today().isoformat()
 SITE_URL         = 'https://synergyfuturecorp.com'
 TALLY_VERSION    = 'TallyPrime 6.0'   # update when Tally releases a new version
+GEMINI_MODEL     = 'gemini-2.5-flash-lite'
 
 # Topics that Synergy directly solves → use 'product' article mode
 PRODUCT_TOPIC_KEYWORDS = [
@@ -382,7 +383,7 @@ def get_audio_transcript_gemini(video_id, video_title):
         try:
             print('    Uploading to Gemini...')
             uploaded = client.files.upload(
-                path=audio_path,
+                file=audio_path,
                 config=types.UploadFileConfig(mime_type=mime_type),
             )
 
@@ -914,21 +915,23 @@ def run_pipeline(topic, provider='gemini', auto=False, push=False):
         print(f'  {icon} {v["title"][:65]}')
 
     usable = [v for v in videos if v['transcript']]
-    if not usable:
-        # Stage 3: Audio download → Gemini Files API (works for any video length)
-        print('No captions found. Downloading audio for Gemini analysis...')
-        for v in videos[:1]:
+    no_caption = [v for v in videos if not v.get('transcript')]
+    if no_caption:
+        # Stage 3: Audio download → Gemini Files API (primary method, any video length)
+        label = 'No captions found.' if not usable else 'Enriching with audio...'
+        print(f'{label} Downloading audio for Gemini analysis...')
+        for v in no_caption[:3]:  # Up to 3 videos for richer research
             print(f'  {v["title"][:65]}')
             content = get_audio_transcript_gemini(v['id'], v['title'])
             if content:
                 v['transcript'] = content
                 print(f'    ✓ {len(content)} chars extracted from audio')
             else:
-                # Stage 4: Last resort — title + description only
-                v['transcript'] = f"Video title: {v['title']}\nDescription: {v['description']}"
-                print(f'    ✗ Using title/description only')
+                if not v.get('transcript'):
+                    v['transcript'] = f"Video title: {v['title']}\nDescription: {v['description']}"
+                    print(f'    ✗ Using title/description only')
 
-        usable = [v for v in videos if v.get('transcript')]
+    usable = [v for v in videos if v.get('transcript')]
 
     mode = detect_article_mode(topic)
     print(f'\n Generating article via {provider} from {len(usable)} video(s)... [mode: {mode}]')
