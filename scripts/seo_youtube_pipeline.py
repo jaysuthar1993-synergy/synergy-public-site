@@ -225,101 +225,132 @@ def build_prompt(topic, videos_with_transcript):
         research_text += f"\n\n--- VIDEO: {v['title']} (Channel: {v['channel']}) ---\n"
         research_text += v['transcript'][:2500]
 
-    return f"""You are writing an SEO Knowledge Hub article for synergyfuturecorp.com about Synergy Automation.
-This tool lets Indian CAs and accountants post Excel bank statements directly to Tally Prime and Tally ERP 9 — free, no XML files.
+    return f"""You are a senior content writer for synergyfuturecorp.com. You write for Indian CAs and accountants who are busy, skeptical, and will stop reading the moment content feels generic.
+
+Synergy Automation is a FREE tool that lets Indian CAs post Excel bank statements directly to Tally Prime and Tally ERP 9 — no XML files, no manual entry.
 
 TOPIC: {topic}
 
 {BRAND_RULES}
 
-RESEARCH (YouTube transcripts — use as INSPIRATION for what to explain, write 100% original content):
+RESEARCH (YouTube content — use as INSPIRATION only, write 100% original content):
 {research_text}
 
-─── WRITING STYLE ─────────────────────────────────────────────────────────────
-- Simple English. Write like talking to a busy CA, not writing a textbook.
-- Overview first, then detail. Give the answer in the first paragraph.
-- Each section stands alone — no "as mentioned above" or "see below" references.
-- Specific and actionable — say WHAT to click and WHERE, not just "reconcile your entries".
-- Keep the reader moving: short sentences, clear steps, no filler phrases.
+━━━ READER PSYCHOLOGY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Your reader is a CA or accountant who:
+- Has 3 browser tabs open while reading this
+- Has done this task before the painful way — they KNOW the frustration
+- Will close the tab the moment they hit a vague sentence like "it saves time"
+- Trusts specifics: exact menu paths, real numbers, named mistakes
+- Relates to Indian context: GST deadlines, Tally quirks, SBI/HDFC/ICICI statements
 
-─── REQUIRED CONTENT STRUCTURE ────────────────────────────────────────────────
-Follow these blocks IN THIS EXACT ORDER (do not add extra sections or reorder):
+To keep them reading:
+1. START with their specific pain — name the exact moment it hurts (month-end, GST filing day, audit)
+2. REWARD immediately — give the key insight/answer in the first paragraph, not at the end
+3. USE contrast — show the old painful way briefly, then the better way (makes the solution feel earned)
+4. EMBED pro tips in steps — one "Tally tip:" or "Watch out:" per step keeps pros engaged
+5. WRITE in second person ("you", "your") — feels like advice from a senior CA, not a blog post
+6. END sections with a micro-hook — one sentence that makes them want to read the next section
+7. FAQ answers must feel like WhatsApp replies from a CA friend — direct, no padding
 
-1. intro       — Hook: 1 sentence naming the exact pain. Then 2-3 sentences: what this covers + who benefits.
-2. h2 + p      — "What is [Topic]" — plain-English explanation, 60-80 words, no jargon.
-3. h2 + steps  — "How to [Primary Action] — Step by Step" — 4-6 numbered steps, each 1-2 clear sentences.
-4. h2 + list   — "Common Mistakes to Avoid" — 3-5 specific mistakes Indian CAs actually make here.
-5. h2 + p      — "How Synergy Automation Makes This Easier" — explain product value for this exact topic.
-6. infographic — REQUIRED. Visual summary card. variant='steps' for process topics, 'checklist' for tips.
-7. faq         — REQUIRED. 4-5 Q&As, self-contained answers (AI engines quote these directly).
+━━━ WRITING RULES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Sentences: max 20 words. If it runs longer, split it.
+- Paragraphs: max 3 sentences. White space = readability.
+- NO filler openers: never start with "In today\\'s fast-paced world", "Managing finances", "As a CA"
+- NO vague claims: never "saves time", "easy to use", "powerful tool" — always be SPECIFIC
+- YES to numbers: "takes 3 hours manually → 8 minutes with automation" beats "saves time"
+- YES to specifics: "Go to Gateway of Tally > Banking > Bank Reconciliation" beats "open reconciliation"
+- YES to Indian context: mention GST 20th deadline, advance tax quarters, TDS 7th, year-end March 31
+- YES to named banks: HDFC, SBI, ICICI, Axis, Kotak, PNB, Bank of Baroda — wherever natural
 
-─── OUTPUT FORMAT ─────────────────────────────────────────────────────────────
-Return ONLY a valid JavaScript object (no export, no const, no markdown blocks — just the raw object).
+━━━ CONTENT STRUCTURE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Follow IN THIS EXACT ORDER:
+
+1. intro — Open with the SPECIFIC painful moment (not generic). Example: "It\\'s the 19th. GSTR-3B is due tomorrow. Your bank statement has 340 entries and not one is reconciled." Then: what this article solves + who benefits most. 3-4 sentences total.
+
+2. h2 + p — "What is [Topic]?" — 60-80 words. Plain English. One analogy if it helps. No jargon without definition.
+
+3. h2 + steps — "How to [Primary Action] — Step by Step" — 5-7 steps. Each step: what to do (specific) + one "Tally tip:" or "Watch out:" embedded. End this section with: "Once you\\'ve done this a few times, it takes under 10 minutes. But there are traps that trip up even experienced CAs — here\\'s what to watch."
+
+4. h2 + list — "Common Mistakes That Cost CAs Hours" (not just "Common Mistakes") — 4-5 mistakes. Each: name the mistake → what goes wrong → exact fix. Make these feel like war stories, not textbook warnings.
+
+5. h2 + p — "How Synergy Automation Handles This for You" — 3-4 sentences. Connect directly to the most painful step above. Be specific about what Synergy does (upload Excel → review table → post to Tally). End with the free claim.
+
+6. infographic — Visual summary. variant: \\'steps\\' for processes, \\'checklist\\' for tips/mistakes.
+
+7. faq — 5 Q&As. Questions must sound like real Google/ChatGPT searches Indian CAs type. Answers: 2-3 sentences, self-contained (no "as mentioned above"), direct tone — like a WhatsApp reply from a senior CA.
+
+━━━ OUTPUT FORMAT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Return ONLY a valid JavaScript object — no export, no const, no markdown fences, no explanation. Just the raw object starting with {{ and ending with }}.
 Use single quotes for ALL strings. Escape apostrophes as \\'.
 
 {{
-  slug: 'url-slug-here',
-  title: 'Title 55-60 Chars Including Year (2026)',
+  slug: 'url-friendly-slug-no-year',
+  title: 'Compelling Title 55-65 Chars — Include Year 2026',
   tag: 'Guide',
   published: '{TODAY}',
   updated: '{TODAY}',
-  description: '140-160 char meta description containing primary keyword. Complete sentence.',
-  keywords: 'primary keyword, secondary keyword, tertiary keyword',
+  description: 'Meta description 140-160 chars. Primary keyword near start. Specific benefit. Complete sentence ending with period.',
+  keywords: 'primary keyword, secondary keyword, long-tail keyword',
   content: [
     {{
       type: 'intro',
-      text: 'Hook: one sentence naming the exact problem CAs face with this topic. Then 2-3 sentences on what you\\'ll learn here and who benefits most.'
+      text: 'Specific painful moment opening sentence — name the exact day/deadline/frustration. Then 2-3 sentences: what this article shows you and who benefits most (Indian CAs, accountants, CA firms).'
     }},
-    {{ type: 'h2', text: 'What is [Topic]' }},
-    {{ type: 'p', text: 'Plain-English explanation in 60-80 words. No jargon. Define any technical terms.' }},
-    {{ type: 'h2', text: 'How to [Primary Action] — Step by Step' }},
+    {{ type: 'h2', text: 'What is [Topic]?' }},
+    {{ type: 'p', text: 'Plain-English definition in 60-80 words. One analogy. No unexplained jargon.' }},
+    {{ type: 'h2', text: 'How to [Primary Action] in Tally Prime — Step by Step' }},
     {{ type: 'steps', items: [
-      'Step 1: Do this specific thing — explain exactly how in one sentence.',
-      'Step 2: Then do this — mention what to watch out for.',
+      'Step 1: Specific action with exact Tally path. Tally tip: shortcut or insider note here.',
+      'Step 2: Specific action. Watch out: common mistake at this exact step.',
       'Step 3: ...',
-      'Step 4: ...'
+      'Step 4: ...',
+      'Step 5: ...'
     ]}},
-    {{ type: 'h2', text: 'Common Mistakes to Avoid' }},
+    {{ type: 'h2', text: 'Common Mistakes That Cost CAs Hours' }},
     {{ type: 'list', items: [
-      'Mistake description: explain what goes wrong and the specific fix.',
-      'Mistake description: ...',
-      'Mistake description: ...'
+      'Mistake name: what exactly goes wrong — specific fix in one sentence.',
+      'Mistake name: what exactly goes wrong — specific fix.',
+      'Mistake name: ...',
+      'Mistake name: ...'
     ]}},
-    {{ type: 'h2', text: 'How Synergy Automation Makes This Easier' }},
-    {{ type: 'p', text: 'Explain specifically — not generically — how Synergy Automation helps with THIS exact topic. Mention the relevant step from the guide above.' }},
+    {{ type: 'h2', text: 'How Synergy Automation Handles This for You' }},
+    {{ type: 'p', text: 'Connect directly to the hardest step above. Explain what Synergy Automation does: upload your Excel bank statement, review entries in a clean table, post directly to Tally Prime or Tally ERP 9 — free, no XML files needed. End with the free claim.' }},
     {{
       type: 'infographic',
       variant: 'steps',
-      title: 'Process title: 6-8 words',
+      title: 'Concise process title 5-7 words',
       items: [
-        'Short step label (4-7 words)',
-        'Short step label',
-        'Short step label',
-        'Short step label',
-        'Short step label'
+        'Step label 4-6 words',
+        'Step label 4-6 words',
+        'Step label 4-6 words',
+        'Step label 4-6 words',
+        'Step label 4-6 words'
       ]
     }},
     {{
       type: 'faq',
       items: [
-        {{ q: 'Question using primary keyword?', a: 'Self-contained 2-3 sentence answer. No "see above" — the answer must make sense alone. AI engines quote these directly.' }},
-        {{ q: 'Second specific question Indian CAs ask?', a: 'Self-contained answer.' }},
-        {{ q: 'Question about Synergy Automation for this topic?', a: 'Self-contained answer mentioning Synergy Automation and what it does here.' }},
-        {{ q: 'Common concern or edge case?', a: 'Self-contained answer.' }},
-        {{ q: 'Fifth question (optional but recommended)?', a: 'Self-contained answer.' }}
+        {{ q: 'Specific question using primary keyword that CAs actually search?', a: 'Direct 2-3 sentence answer. Self-contained. No "as mentioned above". Reads like a WhatsApp reply from a senior CA.' }},
+        {{ q: 'How does [topic] work in Tally Prime vs Tally ERP 9?', a: 'Self-contained answer covering both versions.' }},
+        {{ q: 'Can Synergy Automation help with [topic]?', a: 'Self-contained answer mentioning what Synergy does for this exact topic. Mention it is free.' }},
+        {{ q: 'What is the most common mistake in [topic] for Indian CAs?', a: 'Self-contained answer with the specific mistake and fix.' }},
+        {{ q: 'How long does [topic] take in Tally Prime?', a: 'Self-contained answer with realistic time estimate — manual vs automated.' }}
       ]
     }}
   ]
 }}
 
-─── CONTENT RULES ─────────────────────────────────────────────────────────────
-- MANDATORY blocks: steps, infographic, faq — omitting any = invalid output
-- Minimum 4 FAQ items, all self-contained (critical for GEO/AI engine citations)
-- Mention "Synergy Automation" at least 3 times in body content
-- Primary keyword in: title, first h2, and at least one FAQ question
-- Include relevant Indian bank names (HDFC, SBI, ICICI, Axis, Kotak, etc.) where natural
-- Features you MAY mention: Excel upload, review table, direct posting to Tally, ledger assignment
-- NEVER mention: PDF upload, LedgerMatch, duplicate detection — these don\\'t exist or are dev-only
+━━━ MANDATORY CHECKS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Before finalising, verify:
+- steps block present with 5+ items ✓
+- infographic block present ✓
+- faq block with 5 items ✓
+- "Synergy Automation" mentioned 3+ times ✓
+- No vague phrases: "saves time", "easy to use", "powerful", "seamless" ✗
+- No forbidden mentions: PDF upload, LedgerMatch, duplicate detection ✗
+- Primary keyword in title AND at least one FAQ question ✓
+- Every FAQ answer is self-contained (no "see above" / "as mentioned") ✓
 """
 
 
@@ -361,7 +392,7 @@ def _generate_gemini(prompt):
                 contents=prompt,
                 config=types.GenerateContentConfig(max_output_tokens=4000, temperature=0.7)
             )
-            return response.text.strip()
+            return _clean_article(response.text.strip())
         except Exception as e:
             err = str(e)
             if ('429' in err or '503' in err) and attempt < 2:
@@ -371,6 +402,17 @@ def _generate_gemini(prompt):
             else:
                 print(f'ERROR: Gemini generation failed: {e}')
                 sys.exit(1)
+
+
+def _clean_article(text):
+    """Strip markdown code fences Gemini sometimes wraps output in."""
+    text = text.strip()
+    # Remove ```json ... ``` or ``` ... ``` wrappers
+    if text.startswith('```'):
+        text = re.sub(r'^```[a-z]*\n?', '', text)
+        text = re.sub(r'\n?```$', '', text)
+        text = text.strip()
+    return text
 
 
 def _generate_openai(prompt):
@@ -430,9 +472,9 @@ def show_preview(topic, article_js, videos):
     print('-'*60)
 
     # Extract title and slug for quick review
-    slug_match = re.search(r"slug:\s*'([^']+)'", article_js)
-    title_match = re.search(r"title:\s*'([^']+)'", article_js)
-    desc_match = re.search(r"description:\s*'([^']+)'", article_js)
+    slug_match = re.search(r'''["']?slug["']?\s*:\s*["']([^"']+)["']''', article_js)
+    title_match = re.search(r'''["']?title["']?\s*:\s*["']([^"']+)["']''', article_js)
+    desc_match = re.search(r'''["']?description["']?\s*:\s*["']([^"']+)["']''', article_js)
 
     if slug_match:
         print(f'  URL:   /blog/{slug_match.group(1)}')
@@ -463,7 +505,7 @@ def show_preview(topic, article_js, videos):
 # ─────────────────────────────────────────────
 def publish_article(article_js, commit=True, push=False):
     """Write article to all files. commit=False skips git (GitHub Actions commits separately)."""
-    slug_match = re.search(r"slug:\s*'([^']+)'", article_js)
+    slug_match = re.search(r'''["']?slug["']?\s*:\s*["']([^"']+)["']''', article_js)
     if not slug_match:
         print('ERROR: Cannot find slug in article. Save as draft and check manually.')
         return False
