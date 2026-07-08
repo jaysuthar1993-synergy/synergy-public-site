@@ -422,7 +422,200 @@ export const blogPosts = [
         ]
       }
     ]
-  }
+  },
+  {
+  "slug": "bank-reconciliation-tally-prime-excel",
+  "title": "Bank Reconciliation Tally Prime: Excel to Tally 2026",
+  "tag": "Guide",
+  "published": "2026-07-08",
+  "updated": "2026-07-08",
+  "description": "Master bank reconciliation in Tally Prime using Excel statements. Learn to post directly, avoid manual entry, and save hours with Synergy Automation.",
+  "keywords": "bank reconciliation tally prime, excel to tally, tally prime bank statement, reconcile bank entries, tally erp 9 bank reconciliation",
+  "content": [
+    {
+      "type": "intro",
+      "text": "It's the 25th. Advance tax deadline is looming. Your bank statement has 500+ entries, a chaotic mix of transactions. Reconciling them manually in Tally Prime feels like a punishment. This guide shows Indian CAs and accountants how to ditch the drudgery and get it done faster."
+    },
+    {
+      "type": "h2",
+      "text": "What is Bank Reconciliation in Tally Prime?"
+    },
+    {
+      "type": "p",
+      "text": "Bank reconciliation in Tally Prime is the process of matching your company's bank account ledger with your bank statement. It ensures that all deposits and withdrawals recorded in your books align with those shown by the bank. Think of it as a financial audit of your cash flow. This verification is crucial for accurate financial reporting and preventing errors."
+    },
+    {
+      "type": "h2",
+      "text": "How to Reconcile Bank Statements in Tally Prime — Step by Step"
+    },
+    {
+      "type": "steps",
+      "items": [
+        "Navigate to Gateway of Tally > Display More Reports > Exception Reports > Bank Reconciliation. Select the relevant bank ledger.",
+        "Click 'New Transactions' to view entries not yet matched. You'll see your Tally entries on the left and bank statement entries on the right.",
+        "Manually match entries by selecting them. This involves finding corresponding debit and credit entries. Tally tip: Use the 'Auto Reconciliation' feature if available, but it often requires pre-formatted files.",
+        "Identify unmatched entries. These are the ones that need your attention. Watch out: Discrepancies here can be simple typos or significant fraud.",
+        "Enter any missing transactions in Tally based on your bank statement. This might involve creating new vouchers or modifying existing ones.",
+        "Review the reconciliation summary to ensure all entries are accounted for. Aim for zero differences."
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "Common Mistakes That Cost CAs Hours"
+    },
+    {
+      "type": "list",
+      "items": [
+        "Outdated Statement Format: Using an old bank statement format that Tally can't parse correctly — always download the latest version from your bank's portal.",
+        "Ignoring Transaction Type Mismatches: Trying to match a 'payment' in Tally with a 'receipt' on the bank statement — ensure debit matches debit, credit matches credit.",
+        "Delaying Reconciliation: Letting bank statements pile up until month-end or year-end — reconciliations should be done frequently to catch errors early.",
+        "Incorrect Narration Matching: Relying solely on exact narration matches, which rarely happen with bank transactions — look for amounts and dates first.",
+        "Manual Data Entry Errors: Typographical errors when entering transactions manually into Tally — a single digit wrong can derail the entire process."
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "How Synergy Automation Handles This for You"
+    },
+    {
+      "type": "p",
+      "text": "Tired of manually matching hundreds of entries? Synergy Automation lets you post your Excel bank statements directly to Tally Prime and Tally ERP 9. Simply upload your Excel file, and Synergy Automation prepares it for direct posting. This bypasses tedious manual entry and the need for XML files. It’s completely FREE."
+    },
+    {
+      "type": "infographic",
+      "variant": "steps",
+      "title": "Synergy Automation: Excel to Tally in Minutes",
+      "items": [
+        "Download Excel statement",
+        "Upload to Synergy Automation",
+        "Review matched entries",
+        "Post directly to Tally",
+        "Reconciliation complete"
+      ]
+    },
+    {
+      "type": "faq",
+      "items": [
+        {
+          "q": "How to reconcile bank statement in Tally Prime with Excel?",
+          "a": "You can upload your Excel bank statement directly to Tally Prime using Synergy Automation. It eliminates manual entry and XML file conversions, making the process much faster and accurate."
+        },
+        {
+          "q": "Does Synergy Automation work with Tally ERP 9?",
+          "a": "Yes, Synergy Automation supports both Tally Prime and Tally ERP 9. You can directly post your Excel bank statements to either version without any issues."
+        },
+        {
+          "q": "Is Synergy Automation free for bank reconciliation?",
+          "a": "Absolutely. Synergy Automation is a FREE tool designed to help CAs and accountants post Excel bank statements directly to Tally Prime and Tally ERP 9. There are no hidden costs."
+        },
+        {
+          "q": "What is the biggest challenge in Tally bank reconciliation?",
+          "a": "The biggest challenge is often the sheer volume of transactions and the time spent manually matching them. Errors from manual entry are also a common headache that costs hours to fix."
+        },
+        {
+          "q": "How long does bank reconciliation take in Tally Prime manually?",
+          "a": "Manually reconciling a bank statement with 300-500 entries in Tally Prime can easily take 3-4 hours, sometimes more, depending on data quality and experience. With Synergy Automation, this can be reduced to under 10 minutes."
+        }
+      ]
+    }
+  ]
+},
+  {
+  slug: 'practical-accountant-course-tallyprime-2026',
+  title: 'Master Practical Accounting: TallyPrime 6.0 Guide 2026',
+  tag: 'Guide',
+  published: '2026-07-08',
+  updated: '2026-07-08',
+  description: 'Unlock a complete practical accountant course using TallyPrime 6.0. Master GST, TDS, and final accounts efficiently.',
+  keywords: 'practical accountant course, TallyPrime 6.0, accounting course india, GST Tally, TDS Tally, final accounts Tally',
+  content: [
+    {
+      type: 'intro',
+      text: 'The 7th July TDS deadline just passed. You are reconciling bank statements. Final accounts are due by March 31st. You need efficient workflows. This article guides you through a complete practical accountant course. Learn to master TallyPrime 6.0 for core accounting tasks.'
+    },
+    {
+      type: 'h2',
+      text: 'What is a Complete Practical Accountant Course?'
+    },
+    {
+      type: 'p',
+      text: 'It’s hands-on training for real-world accounting. Think of it like learning to cook. You get recipes (accounting principles). Then you practice with ingredients (your data) in a kitchen (TallyPrime 6.0). The goal is preparing accurate financial statements. It covers GST, TDS, payroll, and finalization.'
+    },
+    {
+      type: 'h2',
+      text: 'How to Reconcile Bank Statements in TallyPrime 6.0 — Step by Step'
+    },
+    {
+      type: 'steps',
+      items: [
+        'Open TallyPrime 6.0. Go to Gateway of Tally > Display More Reports > Account Books > Ledger.',
+        'Select your bank ledger (e.g., HDFC Bank). Tally tip: Ensure your bank master is correctly set up.',
+        'Press Alt+F1 for details. Select the period for reconciliation.',
+        'Press Alt+V to view the Bank Reconciliation screen.',
+        'Compare Tally entries with your bank statement. Watch out: Mismatched entries need investigation.',
+        'Enter the date of the bank statement. Enter the cheque/transaction number for unmatched entries.'
+      ]
+    },
+    {
+      type: 'h2',
+      text: 'Mistakes That Cost Indian CAs Hours'
+    },
+    {
+      type: 'list',
+      items: [
+        'Mistake: Incorrect GST Tax Classifications → Transactions show wrong tax. Fix: Review HSN/SAC codes in Item Masters.',
+        'Mistake: Unlinked Bank Transactions → Reconciliation fails. Fix: Ensure bank date and amount match exactly.',
+        'Mistake: Missing TDS Deductions → Non-compliance. Fix: Set up TDS Nature of Payments for relevant vouchers.',
+        'Mistake: Vague Narration → Difficult audit trail. Fix: Use specific, descriptive narrations in every voucher entry.'
+      ]
+    },
+    {
+      type: 'h2',
+      text: 'Pro Tips for 2026'
+    },
+    {
+      type: 'p',
+      text: 'For faster data entry, use predefined voucher types. Leverage Tally\'s shortcut keys extensively. Consider Synergy Automation for direct posting to TallyPrime 6.0 and Tally ERP 9, eliminating manual XML file handling. This ensures your data is stored securely in our system.'
+    },
+    {
+      type: 'infographic',
+      variant: 'steps',
+      title: 'Year-End Finalization Checklist',
+      items: [
+        'Bank Reconciliation',
+        'Debtor/Creditor Confirmation',
+        'Inventory Valuation',
+        'Fixed Asset Schedule',
+        'Final Accounts Generation'
+      ]
+    },
+    {
+      type: 'faq',
+      items: [
+        {
+          q: 'How to do GST reconciliation in TallyPrime 6.0?',
+          a: 'Go to Gateway of Tally > Display More Reports > GST Reports > GSTR-1/GSTR-3B. Compare with your bank statement and filed returns. Mismatches require voucher adjustments.'
+        },
+        {
+          q: 'What is the quickest way to enter multiple purchase vouchers?',
+          a: 'Use the Voucher Entry screen. Press Ctrl+I for Change Mode to select "As Voucher". Enter details sequentially. Synergy Automation can post these directly, saving significant time.'
+        },
+        {
+          q: 'Common mistake in TDS entries and how to avoid it?',
+          a: 'Not creating TDS Nature of Payments is common. This leads to incorrect TDS calculations. Ensure each relevant expense or payment has a linked Nature of Payment in TallyPrime 6.0.'
+        },
+        {
+          q: 'TDS in Tally ERP 9 vs TallyPrime 6.0?',
+          a: 'TallyPrime 6.0 offers a more integrated GST and TDS experience. The reporting screens are more intuitive. Core functionalities remain similar, but TallyPrime 6.0 enhances usability.'
+        },
+        {
+          q: 'How long does it realistically take to learn TallyPrime 6.0 for daily accounting?',
+          a: 'With focused daily practice, most CAs can become proficient in core TallyPrime 6.0 functions within 2-4 weeks. Mastering advanced features like complex reporting takes longer.'
+        }
+      ]
+    }
+  ]
+}
 ];
 
 export function getBlogPost(slug) {
