@@ -712,6 +712,103 @@ export const blogPosts = [
       ]
     }
   ]
+},
+  {
+  "slug": "tds-entry-tallyprime-6-0-2026-guide",
+  "title": "TDS Entry in TallyPrime 6.0: 2026 Deadline Fixes",
+  "tag": "Guide",
+  "published": "2026-07-08",
+  "updated": "2026-07-08",
+  "description": "Master TDS entry in TallyPrime 6.0 for 2026. Avoid common errors and streamline your compliance before the next deadline.",
+  "keywords": "TDS entry TallyPrime 6.0, TallyPrime TDS, Indian CA TDS, TDS compliance 2026",
+  "content": [
+    {
+      "type": "intro",
+      "text": "The 7th of August looms for TDS deposits. You're reconciling vendor payments and realizing some TDS entries are missing or incorrect in TallyPrime 6.0. This often happens during year-end rush or when dealing with complex vendor structures. By the end of this article, you will know specific TallyPrime 6.0 techniques to accurately record TDS transactions and avoid costly errors."
+    },
+    {
+      "type": "h2",
+      "text": "What is TDS Entry in TallyPrime?"
+    },
+    {
+      "type": "p",
+      "text": "TDS entry in TallyPrime 6.0 means accurately recording taxes deducted at source. This is like a pre-payment of income tax. When your business pays certain specified expenses (like rent or professional fees), you deduct a percentage of the payment. TallyPrime helps you track these deductions, calculate the amounts, and generate reports for deposit. It ensures your compliance with Indian tax laws."
+    },
+    {
+      "type": "h2",
+      "text": "How to Record TDS Entries in TallyPrime 6.0 — Step by Step"
+    },
+    {
+      "type": "steps",
+      "items": [
+        "Navigate to Gateway of Tally > Vouchers. Press F7 for Journal Voucher.",
+        "Enter the expense ledger (e.g., Rent Paid) as debit. Tally tip: Ensure the expense ledger is configured for TDS deduction.",
+        "Enter the vendor ledger (e.g., XYZ Builders) as credit. Watch out: If TDS is applicable, TallyPrime 6.0 will prompt for TDS details.",
+        "Select the TDS Nature of Payment (e.g., Rent). Tally tip: Create new Nature of Payments if not available via Gateway of Tally > Masters > TDS Nature of Payment.",
+        "Enter the TDS ledger (e.g., TDS on Rent) as credit. Tally tip: This ledger should be under the appropriate indirect tax group.",
+        "Provide TDS details: PAN of deductee, TDS rate, and TDS amount. TallyPrime 6.0 automatically calculates this if configured correctly. Watch out: Verify the PAN format and the applicable TDS rate as per current Income Tax Act rules."
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "Mistakes That Cost Indian CAs Hours"
+    },
+    {
+      "type": "list",
+      "items": [
+        "Mistake: TDS not enabled on expense ledger → What breaks: Tally won't prompt for TDS, leading to non-compliance. → Fix: Go to Gateway of Tally > Accounts Info > Ledgers > Select Ledger > Configure 'TDS Applicable' to 'Yes'.",
+        "Mistake: Incorrect TDS Nature of Payment selected → What breaks: Wrong TDS rate applied, incorrect reporting for Form 26Q/27Q. → Fix: Review the payment type and select the precise Nature of Payment. Use TallyPrime 6.0’s search function (Ctrl+F) to find the right one.",
+        "Mistake: Vendor ledger not marked for TDS → What breaks: Tally won't ask for vendor PAN or deduct TDS. → Fix: In the Vendor ledger creation/alteration screen, set 'Is Vendor Deductee' to 'Yes' and enter their PAN.",
+        "Mistake: TDS ledger not set up correctly → What breaks: TDS amount not posted to the correct tax account, affecting balance sheet. → Fix: Ensure your TDS ledger is under 'Current Liabilities' and the TDS nature is correctly linked."
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "Pro Tips for 2026"
+    },
+    {
+      "type": "p",
+      "text": "Before the 7th of September deadline for Q2 TDS deposits, run TDS reports. Use Gateway of Tally > Display More Reports > Statements of Accounts > TDS Reports. This helps catch discrepancies early. For large volumes of TDS entries or to ensure direct posting to Tally without XML files, Synergy Automation is FREE and can significantly reduce manual effort. It supports TallyPrime 6.0 and Tally ERP 9 seamlessly."
+    },
+    {
+      "type": "infographic",
+      "variant": "steps",
+      "title": "TDS Entry Checklist in TallyPrime 6.0",
+      "items": [
+        "Enable TDS on Expense Ledger",
+        "Configure Vendor for TDS",
+        "Select Correct Nature of Payment",
+        "Verify TDS Ledger Setup",
+        "Input Accurate PAN & Rate",
+        "Post Journal Voucher"
+      ]
+    },
+    {
+      "type": "faq",
+      "items": [
+        {
+          "q": "How to do TDS entry for TDS on Salary in TallyPrime 6.0?",
+          "a": "TDS on Salary is typically handled through Payroll. You need to enable Payroll and TDS under Payroll configuration. Then, set up employee masters and salary components with TDS applicability. TallyPrime 6.0 automates the deduction and reporting."
+        },
+        {
+          "q": "What if I forget to deduct TDS from a vendor in TallyPrime 6.0?",
+          "a": "If you discover this after the payment, you must deposit the TDS amount as if you had deducted it. You can book this using a Journal Voucher, debiting the vendor and crediting the TDS payable ledger. You may also need to issue a TDS certificate to the vendor."
+        },
+        {
+          "q": "Can I import TDS entries into TallyPrime 6.0?",
+          "a": "TallyPrime 6.0 does not natively support direct import of TDS entries via Excel or CSV without specific tools. However, solutions like Synergy Automation can post data directly to Tally without needing intermediate XML files, streamlining the process."
+        },
+        {
+          "q": "How is TDS entry different in Tally ERP 9 compared to TallyPrime 6.0?",
+          "a": "The core functionality remains similar. TallyPrime 6.0 offers a more modern interface and improved usability for TDS configuration and reporting. Menu paths might slightly differ, but the underlying principles of ledger setup and voucher entry are consistent."
+        },
+        {
+          "q": "How much time does TDS entry take in TallyPrime 6.0?",
+          "a": "For a single transaction, it takes about 2-3 minutes once ledgers are set up. For monthly or quarterly bulk entries, manual entry can take hours. Using automation tools can reduce this to minutes, especially for large datasets."
+        }
+      ]
+    }
+  ]
 }
 ];
 
