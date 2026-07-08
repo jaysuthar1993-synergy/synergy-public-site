@@ -340,8 +340,7 @@ def get_audio_transcript_gemini(video_id, video_title):
     with tempfile.TemporaryDirectory() as tmpdir:
         out_template = os.path.join(tmpdir, f'{video_id}.%(ext)s')
 
-        ydl_opts = {
-            # Prefer webm (opus) or m4a — both work with Gemini, no FFmpeg needed
+        base_opts = {
             'format': 'bestaudio[ext=webm]/bestaudio[ext=m4a]/bestaudio',
             'outtmpl': out_template,
             'quiet': True,
@@ -350,14 +349,28 @@ def get_audio_transcript_gemini(video_id, video_title):
         }
 
         print('    Downloading audio...')
+
+        # Attempt 1: direct (works for most videos)
         try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            with yt_dlp.YoutubeDL(base_opts) as ydl:
                 ydl.download([url])
-        except Exception as e:
-            print(f'    Audio download failed: {e}')
-            return None
+        except Exception:
+            pass
 
         matches = _glob.glob(os.path.join(tmpdir, f'{video_id}.*'))
+
+        # Attempt 2: retry with Chrome cookies (bypasses 403 on protected videos)
+        if not matches:
+            print('    Blocked — retrying with Chrome cookies...')
+            try:
+                cookie_opts = {**base_opts, 'cookiesfrombrowser': ('chrome',)}
+                with yt_dlp.YoutubeDL(cookie_opts) as ydl:
+                    ydl.download([url])
+                matches = _glob.glob(os.path.join(tmpdir, f'{video_id}.*'))
+            except Exception as e:
+                print(f'    Audio download failed: {e}')
+                return None
+
         if not matches:
             print('    Audio file not found after download')
             return None
@@ -934,7 +947,7 @@ def run_pipeline(topic, provider='gemini', auto=False, push=False):
         # Stage 3: Audio download → Gemini Files API (primary method, any video length)
         label = 'No captions found.' if not usable else 'Enriching with audio...'
         print(f'{label} Downloading audio for Gemini analysis...')
-        for v in no_caption[:3]:  # Up to 3 videos for richer research
+        for v in no_caption[:6]:  # Up to 6 videos — skip 403-blocked ones, get richer research
             print(f'  {v["title"][:65]}')
             content = get_audio_transcript_gemini(v['id'], v['title'])
             if content:
