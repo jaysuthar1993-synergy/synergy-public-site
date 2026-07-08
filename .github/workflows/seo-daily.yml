@@ -1,8 +1,9 @@
 name: SEO Daily Article Generator
 
 on:
-  schedule:
-    - cron: '30 2 * * *'   # 8:00 AM IST
+  # Daily cron disabled — pipeline runs locally (better YouTube transcript access)
+  # schedule:
+  #   - cron: '30 2 * * *'   # 8:00 AM IST
   workflow_dispatch:
     inputs:
       topic:

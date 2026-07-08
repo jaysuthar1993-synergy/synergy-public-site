@@ -1,11 +1,15 @@
 # ─────────────────────────────────────────────────────────────
 #  SEO Article Generator — Local Runner
-#  Runs the pipeline, commits result, and pushes to GitHub.
+#  Generates article, commits, and pushes to GitHub.
 #
-#  Usage:
-#    .\run_seo.ps1                        # next topic from queue
-#    .\run_seo.ps1 "tds entry tally prime"  # specific topic
-#    .\run_seo.ps1 --dry                  # test without pushing
+#  Usage (manual):
+#    .\run_seo.ps1                           # next topic from queue, interactive
+#    .\run_seo.ps1 "tds entry tally prime"   # specific topic, interactive
+#    .\run_seo.ps1 --auto                    # next topic, no approval prompt
+#    .\run_seo.ps1 --dry                     # test without pushing
+#
+#  Automated (Task Scheduler calls this with --auto):
+#    No interaction needed — generates, commits, pushes, done.
 # ─────────────────────────────────────────────────────────────
 
 $ErrorActionPreference = "Stop"
@@ -15,11 +19,19 @@ Set-Location $RepoRoot
 
 # Parse args
 $topic = ""
-$dry = $false
+$dry   = $false
+$auto  = $false
 foreach ($arg in $args) {
-    if ($arg -eq "--dry") { $dry = $true }
+    if ($arg -eq "--dry")  { $dry  = $true }
+    elseif ($arg -eq "--auto") { $auto = $true }
     else { $topic = $arg }
 }
+
+$timestamp = Get-Date -Format "yyyy-MM-dd HH:mm"
+Write-Host ""
+Write-Host "═══════════════════════════════════════" -ForegroundColor Cyan
+Write-Host " Synergy SEO Pipeline — $timestamp" -ForegroundColor Cyan
+Write-Host "═══════════════════════════════════════" -ForegroundColor Cyan
 
 # Check .env exists
 if (-not (Test-Path ".env")) {
@@ -27,45 +39,49 @@ if (-not (Test-Path ".env")) {
     Write-Host "ERROR: .env file not found at $RepoRoot\.env" -ForegroundColor Red
     Write-Host "Create it with:" -ForegroundColor Yellow
     Write-Host "  GEMINI_API_KEY=your_key_here" -ForegroundColor Yellow
-    Write-Host "  YOUTUBE_API_KEY=your_key_here  (optional)" -ForegroundColor Yellow
+    Write-Host "  YOUTUBE_API_KEY=your_key_here" -ForegroundColor Yellow
     exit 1
 }
 
 # Ensure on develop branch
-$branch = git rev-parse --abbrev-ref HEAD
+$branch = git rev-parse --abbrev-ref HEAD 2>&1
 if ($branch -ne "develop") {
     Write-Host "Switching to develop branch..." -ForegroundColor Cyan
     git checkout develop
 }
 
 # Pull latest
-Write-Host "Pulling latest from origin/develop..." -ForegroundColor Cyan
+Write-Host "Pulling latest..." -ForegroundColor Cyan
 git pull origin develop --quiet
 
-# Build command
-$pushFlag = if ($dry) { "" } else { "--push" }
+# Build flags
+$autoFlag = if ($auto) { "--auto" } else { "" }
+$pushFlag = if ($dry)  { "" } else { "--push" }
 
+# Run pipeline
 if ($topic) {
-    Write-Host ""
-    Write-Host "Running pipeline for topic: $topic" -ForegroundColor Green
-    python scripts/seo_youtube_pipeline.py $topic $pushFlag
+    Write-Host "Topic: $topic" -ForegroundColor Green
+    if ($auto) {
+        python scripts/seo_youtube_pipeline.py $topic $autoFlag $pushFlag
+    } else {
+        python scripts/seo_youtube_pipeline.py $topic $pushFlag
+    }
 } else {
-    Write-Host ""
-    Write-Host "Running pipeline (next topic from queue)..." -ForegroundColor Green
-    python scripts/seo_youtube_pipeline.py --queue $pushFlag
+    Write-Host "Mode: next topic from queue" -ForegroundColor Green
+    python scripts/seo_youtube_pipeline.py --queue $autoFlag $pushFlag
 }
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host ""
-    Write-Host "Pipeline failed. Check output above." -ForegroundColor Red
-    exit 1
-}
+$exitCode = $LASTEXITCODE
 
 Write-Host ""
+if ($exitCode -ne 0) {
+    Write-Host "Pipeline failed (exit $exitCode). Check output above." -ForegroundColor Red
+    exit $exitCode
+}
+
 if ($dry) {
-    Write-Host "Dry run complete. No push performed." -ForegroundColor Yellow
-    Write-Host "Run without --dry to push to GitHub."
+    Write-Host "Dry run complete — no push." -ForegroundColor Yellow
 } else {
-    Write-Host "Done! Article pushed to GitHub." -ForegroundColor Green
-    Write-Host "Netlify will deploy to synergyfuturecorp.com in ~1 minute."
+    Write-Host "Done! Pushed to GitHub → Netlify deploys in ~1 min." -ForegroundColor Green
+    Write-Host "Live at: https://synergyfuturecorp.com/blog/" -ForegroundColor Cyan
 }
