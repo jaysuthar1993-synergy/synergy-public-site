@@ -521,7 +521,7 @@ export const blogPosts = [
   ]
 },
   {
-  slug: ‘gst-reconciliation-tallyprime-2026-guide’,
+  slug: 'gst-reconciliation-tallyprime-2026-guide',
   title: 'GST Reconciliation TallyPrime 6.0: 2026 Insights',
   tag: 'Guide',
   published: '2026-07-08',
