@@ -784,8 +784,17 @@ def show_preview(topic, article_js, videos):
 # ─────────────────────────────────────────────
 # STEP 5 — PUBLISH
 # ─────────────────────────────────────────────
+def _sanitize_js_quotes(text):
+    """Replace AI-generated curly/smart quotes with straight ASCII quotes."""
+    return (text
+        .replace('‘', "'").replace('’', "'")   # '' → ''
+        .replace('“', '"').replace('”', '"')   # "" → ""
+    )
+
+
 def publish_article(article_js, commit=True, push=False):
     """Write article to all files. commit=False skips git (GitHub Actions commits separately)."""
+    article_js = _sanitize_js_quotes(article_js)
     slug_match = re.search(r'''["']?slug["']?\s*:\s*["']([^"']+)["']''', article_js)
     if not slug_match:
         print('ERROR: Cannot find slug in article. Save as draft and check manually.')
