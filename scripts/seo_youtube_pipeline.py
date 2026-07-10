@@ -823,6 +823,55 @@ def show_preview(topic, article_js, videos):
 # ─────────────────────────────────────────────
 # STEP 5 — PUBLISH
 # ─────────────────────────────────────────────
+def check_topic_relevance(topic):
+    """
+    Ask Gemini: is this topic genuinely about Tally accounting workflows?
+    Returns (is_relevant: bool, reason: str).
+    Rejects topics like 'ITR filing on income tax portal' which are adjacent
+    but not about Tally software usage.
+    """
+    prompt = (
+        f'Topic: "{topic}"\n\n'
+        'Is this topic genuinely about using Tally accounting software (TallyPrime / Tally ERP 9) '
+        'for day-to-day accounting workflows — like entering vouchers, reconciling bank statements, '
+        'configuring payroll, GST reports inside Tally, TDS entries in Tally, etc.?\n\n'
+        'Answer NO if the topic is primarily about:\n'
+        '- Filing returns on government portals (income tax portal, GST portal) — not Tally\n'
+        '- Generic accounting/finance concepts unrelated to Tally software\n'
+        '- Tax planning or investment advice\n'
+        '- General ITR filing steps (these happen on the IT portal, not in Tally)\n\n'
+        'Reply with exactly one line: YES or NO, followed by a colon and a brief reason.\n'
+        'Example: YES: GST reports in TallyPrime are a core Tally workflow\n'
+        'Example: NO: ITR filing is done on incometaxindia.gov.in, not in Tally'
+    )
+    result = _call_gemini(prompt, max_tokens=60, temperature=0.0)
+    if not result:
+        return True, 'Gemini unavailable — assuming relevant'
+    line = result.strip().splitlines()[0]
+    is_relevant = line.upper().startswith('YES')
+    reason = line.split(':', 1)[-1].strip() if ':' in line else line
+    return is_relevant, reason
+
+
+def _send_telegram_approval(slug, article_js):
+    """Send Telegram notification with article preview + Approve/Discard buttons."""
+    try:
+        sys.path.insert(0, str(Path(__file__).parent))
+        from seo_telegram import send_approval_request
+        title_match = re.search(r'''["']?title["']?\s*:\s*["']([^"']+)["']''', article_js)
+        desc_match  = re.search(r'''["']?description["']?\s*:\s*["']([^"']+)["']''', article_js)
+        title = title_match.group(1) if title_match else slug
+        desc  = desc_match.group(1) if desc_match else ''
+        send_approval_request(slug, title, desc)
+        print('  Telegram: Approval request sent. Article will go live when you approve.')
+        print('  No Telegram approval = stays on develop only (not on master).')
+    except Exception as e:
+        print(f'  Telegram notification skipped: {e}')
+        preview_url = f'https://develop.synergy-public-site.pages.dev/blog/{slug}'
+        print(f'  Manual review: {preview_url}')
+        print(f'  To publish: git checkout master && git merge develop && git push origin master')
+
+
 def _sanitize_js_quotes(text):
     """Replace AI-generated curly/smart quotes with straight ASCII quotes."""
     return (text
@@ -900,7 +949,9 @@ def publish_article(article_js, commit=True, push=False):
         )
         if push_result.returncode == 0:
             print(f'  ✓ Pushed to origin/{branch}')
-            print(f'  → Live at synergyfuturecorp.com/blog/{slug} after Cloudflare Pages deploys (~1 min)')
+            print(f'  Preview: https://develop.synergy-public-site.pages.dev/blog/{slug}')
+            # Send Telegram approval request (non-blocking — if no token, just prints instructions)
+            _send_telegram_approval(slug, article_js)
         else:
             print(f'  WARNING: git push failed: {push_result.stderr}')
             print(f'  Run manually: git push origin {branch}')
@@ -1077,6 +1128,17 @@ def main():
         if not topic:
             print('Could not discover trending topic. Falling back to queue.')
             topic = get_next_topic_from_queue()
+
+        # Relevance check — reject topics not genuinely about Tally workflows
+        print(f'Checking relevance of "{topic}"...')
+        is_relevant, reason = check_topic_relevance(topic)
+        if not is_relevant:
+            print(f'  SKIP (not Tally-related): {reason}')
+            mark_topic_done(topic)  # avoid picking same topic again
+            print('  Trying queue fallback...')
+            topic = get_next_topic_from_queue()
+            print(f'  Queue topic: "{topic}"')
+
         print(f'Topic: "{topic}"')
         success = run_pipeline(topic, provider=provider, auto=auto, push=push)
         if success:
