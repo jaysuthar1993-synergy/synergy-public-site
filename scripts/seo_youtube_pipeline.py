@@ -153,10 +153,22 @@ def search_videos(topic, max_results=5):
     return videos
 
 
+def _clean_topic(title):
+    """Extract a clean topic string from a YouTube video title."""
+    t = re.sub(r'#\w+', '', title)
+    t = re.sub(r'\|.*$', '', t)
+    t = re.sub(r'^\s*\d+[\.\)]\s*', '', t)
+    t = re.sub(r'\s+', ' ', t).strip()
+    if len(t) > 80:
+        t = t[:80].rsplit(' ', 1)[0]
+    return t
+
+
 def get_trending_topic():
     """
     Discover trending topic from recent high-view Tally/accounting YouTube videos.
-    Searches multiple seed queries, deduplicates, returns the top result's cleaned title.
+    Searches multiple seed queries, skips topics already in done list,
+    returns the first fresh topic found.
     """
     try:
         from googleapiclient.discovery import build
@@ -165,22 +177,33 @@ def get_trending_topic():
         return None
 
     if not YOUTUBE_API_KEY:
-        print('No YOUTUBE_API_KEY — cannot discover trending topics.')
+        print('No YOUTUBE_API_KEY -- cannot discover trending topics.')
         return None
 
+    # Load done topics so we don't re-generate articles
+    done = set()
+    if DONE_FILE.exists():
+        done = {ln.strip().lower() for ln in DONE_FILE.read_text(encoding='utf-8').splitlines() if ln.strip()}
+
+    # Also skip slugs already in blogData.js
+    if BLOG_DATA_FILE.exists():
+        blog_content = BLOG_DATA_FILE.read_text(encoding='utf-8')
+    else:
+        blog_content = ''
+
     youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
-    published_after = (date.today() - timedelta(days=45)).isoformat() + 'T00:00:00Z'
+    published_after = (date.today() - timedelta(days=60)).isoformat() + 'T00:00:00Z'
 
     seen_ids = set()
     candidates = []
 
-    for query in TRENDING_QUERIES[:3]:   # 3 queries = 3 API calls, keeps quota low
+    for query in TRENDING_QUERIES[:5]:   # up to 5 queries for wider discovery
         try:
             resp = youtube.search().list(
                 part='snippet',
                 q=query,
                 type='video',
-                maxResults=5,
+                maxResults=8,
                 order='viewCount',
                 publishedAfter=published_after,
                 regionCode='IN',
@@ -191,8 +214,13 @@ def get_trending_topic():
                     seen_ids.add(vid_id)
                     title = item['snippet']['title']
                     channel = item['snippet']['channelTitle']
-                    # Skip official Tally Solutions promos — mostly marketing
-                    if 'tally solution' not in channel.lower():
+                    # Skip Tally Solutions promos and broad course/playlist videos
+                    broad_terms = ['complete course', 'full course', 'full tutorial', 'complete tutorial',
+                                   'complete guide for beginners', 'part 1', 'part 2', 'part 3',
+                                   'episode', 'ep.', 'ep ']
+                    title_lower = title.lower()
+                    if ('tally solution' not in channel.lower()
+                            and not any(t in title_lower for t in broad_terms)):
                         candidates.append({'id': vid_id, 'title': title, 'channel': channel})
         except Exception as e:
             print(f'  Warning: trending search failed for "{query}": {e}')
@@ -200,19 +228,23 @@ def get_trending_topic():
     if not candidates:
         return None
 
-    best = candidates[0]
-    # Clean title → topic: strip hashtags, channel suffix, episode numbers
-    topic = best['title']
-    topic = re.sub(r'#\w+', '', topic)
-    topic = re.sub(r'\|.*$', '', topic)
-    topic = re.sub(r'^\s*\d+[\.\)]\s*', '', topic)
-    topic = re.sub(r'\s+', ' ', topic).strip()
-    if len(topic) > 80:
-        topic = topic[:80].rsplit(' ', 1)[0]
+    # Pick first candidate whose topic is not already done
+    for cand in candidates:
+        topic = _clean_topic(cand['title'])
+        if topic.lower() in done:
+            print(f'  Skip (done): "{topic[:60]}"')
+            continue
+        # Also skip if a very similar slug already exists in blogData.js
+        slug_hint = topic.lower()[:25].replace(' ', '-')
+        if slug_hint in blog_content:
+            print(f'  Skip (slug exists): "{topic[:60]}"')
+            continue
+        print(f'  Trending video: "{cand["title"][:65]}" -- {cand["channel"]}')
+        print(f'  Topic: "{topic}"')
+        return topic
 
-    print(f'  Trending video: "{best["title"][:65]}" — {best["channel"]}')
-    print(f'  Topic extracted: "{topic}"')
-    return topic
+    print('  All trending topics already covered. Falling back to queue.')
+    return None
 
 
 def detect_article_mode(topic):
@@ -486,6 +518,13 @@ RESEARCH (from YouTube — use as INSPIRATION only, write 100% original content)
 - Named banks where natural: HDFC, SBI, ICICI, Axis, Kotak, PNB, Bank of Baroda
 - Second person ("you", "your") throughout — feels like advice from a senior CA
 - FAQ answers: self-contained, direct — like a WhatsApp reply, not a textbook paragraph
+
+━━━ SCOPE RULE — ONE TASK, NOT A WHOLE COURSE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+This article covers ONE specific task or workflow within "{topic}" — not everything about it.
+A "complete course" has 20 videos. This article = ONE of those 20 videos, done deeply.
+GOOD scope: "How to configure TDS Nature of Payment in TallyPrime 6.0"
+BAD scope:  "Complete guide to TDS in Tally" (too broad)
+Pick the most actionable, searchable sub-task from the research and go deep on it.
 
 ━━━ ANTI-DUPLICATE RULE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 This article MUST cover a unique angle on "{topic}". Do not repeat generic steps any CA already knows.
@@ -937,7 +976,7 @@ def run_pipeline(topic, provider='gemini', auto=False, push=False):
                  Caller is responsible for committing/PR after this returns True.
     auto=False — interactive y/n/s/r approval (local use).
     """
-    print(f'\n🔍 Searching YouTube: "{topic} tally india" ...')
+    print(f'\nSearching YouTube: "{topic} tally india" ...')
     videos = search_videos(topic, max_results=6)
 
     if not videos:

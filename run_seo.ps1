@@ -23,6 +23,9 @@ if (-not (Test-Path $Python)) {
 
 Set-Location $RepoRoot
 
+# Force UTF-8 output so emoji in pipeline prints don't crash on Windows cp1252
+$env:PYTHONIOENCODING = "utf-8"
+
 # Parse args
 $topic = ""
 $dry   = $false
