@@ -32,7 +32,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install google-generativeai feedparser requests beautifulsoup4 google-api-python-client
+        run: pip install google-genai feedparser requests beautifulsoup4 google-api-python-client
 
       - name: Run news monitor (auto mode)
         env:
