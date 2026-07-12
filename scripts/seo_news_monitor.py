@@ -565,9 +565,10 @@ Return ONLY a valid JSON object (no markdown, no extra text):
   "title": "Improved plain-English headline — max 100 chars. Who it affects + what changed.",
   "summary": "3-4 sentences in simple English. What happened? Why should I care? What do I need to do? Write for someone who has 30 seconds.",
   "keyPoints": [
-    {{"label": "Who is affected", "text": "Specific businesses or taxpayers this applies to — be concrete"}},
-    {{"label": "What changed", "text": "One clear sentence on the actual change or new rule"}},
-    {{"label": "What to do now", "text": "The single most important action with a deadline if any"}}
+    // 2 to 4 items — only include what genuinely matters for THIS specific update.
+    // Each label should be unique and specific to the content (e.g. "Deadline", "Penalty", "Who qualifies", "The new rule").
+    // Do NOT always use the same 3 labels. Let the content decide.
+    {{"label": "Short label (2-4 words)", "text": "One clear sentence — concrete, no filler"}}
   ],
   "tallyImpact": "Exact step-by-step action in {TALLY_VERSION}: name the menu path and what entry/report to check."
 }}

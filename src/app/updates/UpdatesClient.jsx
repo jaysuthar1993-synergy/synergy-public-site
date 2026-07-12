@@ -14,10 +14,12 @@ const KP_COLORS = [
 
 function KeyPointsInfographic({ keyPoints }) {
   if (!keyPoints || keyPoints.length === 0) return null;
+  const count = keyPoints.length;
+  const cols = count === 2 ? '1fr 1fr' : count === 4 ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(130px, 1fr))';
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+      gridTemplateColumns: cols,
       gap: 8,
       margin: '14px 0',
     }}>
