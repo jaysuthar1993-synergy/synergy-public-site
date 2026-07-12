@@ -42,6 +42,18 @@ def _git(*args):
     return _run(['git'] + list(args))
 
 
+def _ping_sitemap():
+    """Submit sitemap to Google Search Console after every master deploy."""
+    try:
+        result = _run([sys.executable, str(REPO_ROOT / 'scripts' / 'submit_sitemap.py')])
+        if result.returncode == 0:
+            print('  Sitemap submitted to Google Search Console.')
+        else:
+            print(f'  Sitemap submit skipped: {result.stdout.strip() or result.stderr.strip()}')
+    except Exception as e:
+        print(f'  Sitemap submit error: {e}')
+
+
 def approve_article(slug, title, msg_id):
     """Merge develop to master → article goes live."""
     print(f'Approving: {slug}')
@@ -65,9 +77,7 @@ def approve_article(slug, title, msg_id):
         return False
 
     _git('checkout', 'develop')
-
-    # NOTE: No manual sitemap ping needed.
-    # Cloudflare Pages automatically notifies search engines via IndexNow on every deploy.
+    _ping_sitemap()
 
     edit_message_text(msg_id,
         f'*Published!*\n\n'
@@ -218,6 +228,8 @@ def approve_single_update(slug, title, msg_id):
     if push.returncode != 0:
         print(f'  Push failed: {push.stderr}')
         return False
+
+    _ping_sitemap()
 
     edit_message_text(msg_id,
         f'*Published!*\n\n'
