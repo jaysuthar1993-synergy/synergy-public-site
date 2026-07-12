@@ -704,6 +704,7 @@ def run_monitor_auto(mode='all', days_back=3):
 
     print(f'\n=== {len(all_found)} NEW ITEM(S) — filtering with Gemini ===')
     added = 0
+    _ADDED_SUMMARIES = []
     for item in all_found:
         print(f'\n  [{item["source"]}] {item["title"][:80]}')
 
@@ -720,11 +721,26 @@ def run_monitor_auto(mode='all', days_back=3):
         if ok:
             print(f'  ✓ Added: {summary["title"][:70]}')
             added += 1
+            _ADDED_SUMMARIES.append(summary)
         else:
             print('  Skipped (duplicate or write error).')
 
     LAST_COUNT_FILE.write_text(str(added), encoding='utf-8')
     print(f'\n✅ {added} update(s) written to updatesData.js')
+
+    # Send Telegram approval if anything was added
+    if added > 0:
+        try:
+            from seo_telegram import send_updates_approval
+            batch_id = f'__updates_{TODAY}'
+            added_titles = [
+                s['title'] for s in _ADDED_SUMMARIES
+            ]
+            send_updates_approval(batch_id, added, added_titles)
+            print(f'  Telegram approval request sent.')
+        except Exception as e:
+            print(f'  Telegram notification failed: {e}')
+            print('  (Updates are on develop — merge manually to master when ready.)')
 
 
 def main():

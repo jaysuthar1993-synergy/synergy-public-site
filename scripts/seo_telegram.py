@@ -139,3 +139,61 @@ def remove_pending(slug):
 
 def list_pending():
     return _load_pending()
+
+
+def send_updates_approval(batch_id, count, titles):
+    """
+    Send a Telegram approval message for a batch of govt updates.
+    batch_id: unique key like '__updates_2026-07-12'
+    """
+    if not BOT_TOKEN or not CHAT_ID:
+        print('TELEGRAM: No bot token or chat ID — skipping notification.')
+        return None
+
+    preview_url = 'https://develop.synergy-public-site.pages.dev/updates'
+
+    title_lines = '\n'.join(f'  • {t}' for t in titles[:8])
+    if len(titles) > 8:
+        title_lines += f'\n  … and {len(titles) - 8} more'
+
+    text = (
+        f'*{count} Govt Update(s) Ready for Review*\n\n'
+        f'*Preview:* [/updates page]({preview_url})\n\n'
+        f'{title_lines}\n\n'
+        f'Approve to publish to synergyfuturecorp.com/updates'
+    )
+
+    keyboard = {
+        'inline_keyboard': [[
+            {'text': f'Publish {count} update(s)', 'callback_data': f'approve:{batch_id}'},
+            {'text': 'Skip (keep on develop)', 'callback_data': f'discard:{batch_id}'},
+        ]]
+    }
+
+    resp = _api(
+        'sendMessage',
+        chat_id=CHAT_ID,
+        text=text,
+        parse_mode='Markdown',
+        reply_markup=keyboard,
+        disable_web_page_preview=True,
+    )
+
+    if not resp.get('ok'):
+        print(f'TELEGRAM ERROR: {resp.get("description", resp)}')
+        return None
+
+    msg_id = resp['result']['message_id']
+    print(f'TELEGRAM: Updates approval sent (id={msg_id})')
+    print(f'  Preview: {preview_url}')
+
+    pending = _load_pending()
+    pending[batch_id] = {
+        'slug':       batch_id,
+        'title':      f'{count} govt update(s)',
+        'message_id': msg_id,
+        'type':       'updates_batch',
+        'sent_at':    time.time(),
+    }
+    _save_pending(pending)
+    return msg_id

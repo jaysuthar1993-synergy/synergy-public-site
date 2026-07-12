@@ -76,22 +76,16 @@ $today = Get-Date -Format "yyyy-MM-dd"
 git add src/data/updatesData.js scripts/seo_news_seen.json 2>$null
 git diff --cached --quiet
 if ($LASTEXITCODE -ne 0) {
-    git commit -m "feat(seo): add $count govt update(s) ($today)"
+    git commit -m "feat(seo): add $count govt update(s) ($today) [pending Telegram approval]"
     git push origin develop
 
-    # Merge to master so updates go live on production immediately
-    git checkout master
-    git pull origin master --quiet
-    git merge develop --no-edit --quiet
-    git push origin master
-    git checkout develop
-
-    # NOTE: No manual sitemap ping needed.
-    # Cloudflare Pages automatically pings search engines via IndexNow on every deploy.
-    # Google sitemap is submitted once via Search Console and crawled on its own schedule.
+    # NOTE: NOT merging to master here.
+    # seo_news_monitor.py sends a Telegram message with Approve/Skip buttons.
+    # seo_poller.py merges develop → master when Approve is pressed.
+    # Cloudflare Pages then deploys automatically via IndexNow.
 
     Write-Host ""
-    Write-Host "OK $count update(s) live on synergyfuturecorp.com/updates" -ForegroundColor Green
+    Write-Host "OK $count update(s) pushed to develop — awaiting Telegram approval." -ForegroundColor Cyan
 } else {
     Write-Host "Nothing staged to commit (updatesData.js unchanged)." -ForegroundColor Yellow
 }

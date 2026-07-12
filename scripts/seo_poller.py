@@ -172,6 +172,37 @@ def discard_article(slug, title, msg_id):
     return True
 
 
+def approve_updates_batch(batch_id, title, msg_id):
+    """Merge develop → master so govt updates go live."""
+    print(f'Approving updates batch: {batch_id}')
+
+    _git('checkout', 'develop')
+    _git('pull', 'origin', 'develop')
+
+    _git('checkout', 'master')
+    _git('pull', 'origin', 'master')
+    merge = _git('merge', 'develop', '--no-edit')
+    if merge.returncode != 0:
+        print(f'  Merge failed: {merge.stderr}')
+        edit_message_text(msg_id, f'ERROR: Could not merge to master.\n```{merge.stderr[:200]}```')
+        return False
+
+    push = _git('push', 'origin', 'master')
+    if push.returncode != 0:
+        print(f'  Push failed: {push.stderr}')
+        return False
+
+    _git('checkout', 'develop')
+
+    edit_message_text(msg_id,
+        f'*Published!*\n\n'
+        f'{title} now live at synergyfuturecorp.com/updates in ~2 min.'
+    )
+    remove_pending(batch_id)
+    print(f'  Updates published to master.')
+    return True
+
+
 def run_once():
     """Check for one batch of Telegram updates and process any callbacks."""
     pending = list_pending()
@@ -217,7 +248,18 @@ def run_once():
 
         title = item.get('title', slug)
 
-        if action == 'approve':
+        # Govt updates batch uses slug prefix '__updates_'
+        if slug.startswith('__updates_'):
+            if action == 'approve':
+                answer_callback(callback_id, 'Publishing updates to master...')
+                approve_updates_batch(slug, title, msg_id)
+            elif action == 'discard':
+                answer_callback(callback_id, 'Skipped — updates stay on develop only.')
+                edit_message_text(msg_id, f'*Skipped.* Updates remain on develop branch and will not go live.')
+                remove_pending(slug)
+            else:
+                answer_callback(callback_id, 'Unknown action.')
+        elif action == 'approve':
             answer_callback(callback_id, 'Publishing to master...')
             approve_article(slug, title, msg_id)
         elif action == 'discard':
