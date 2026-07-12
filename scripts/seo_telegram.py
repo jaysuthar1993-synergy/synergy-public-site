@@ -141,10 +141,10 @@ def list_pending():
     return _load_pending()
 
 
-def send_updates_approval(batch_id, count, titles):
+def send_single_update_approval(entry_id, title, summary):
     """
-    Send a Telegram approval message for a batch of govt updates.
-    batch_id: unique key like '__updates_2026-07-12'
+    Send one Telegram message per govt update with individual Approve/Skip buttons.
+    entry_id: the unique id for this update (used as slug key)
     """
     if not BOT_TOKEN or not CHAT_ID:
         print('TELEGRAM: No bot token or chat ID — skipping notification.')
@@ -152,21 +152,18 @@ def send_updates_approval(batch_id, count, titles):
 
     preview_url = 'https://develop.synergy-public-site.pages.dev/updates'
 
-    title_lines = '\n'.join(f'  • {t}' for t in titles[:8])
-    if len(titles) > 8:
-        title_lines += f'\n  … and {len(titles) - 8} more'
-
     text = (
-        f'*{count} Govt Update(s) Ready for Review*\n\n'
-        f'*Preview:* [/updates page]({preview_url})\n\n'
-        f'{title_lines}\n\n'
-        f'Approve to publish to synergyfuturecorp.com/updates'
+        f'*Govt Update — Approve?*\n\n'
+        f'*{title}*\n\n'
+        f'_{summary[:280]}_\n\n'
+        f'[Preview /updates]({preview_url})'
     )
 
+    slug = f'__update_{entry_id}'
     keyboard = {
         'inline_keyboard': [[
-            {'text': f'Publish {count} update(s)', 'callback_data': f'approve:{batch_id}'},
-            {'text': 'Skip (keep on develop)', 'callback_data': f'discard:{batch_id}'},
+            {'text': 'Publish this update', 'callback_data': f'approve:{slug}'},
+            {'text': 'Skip', 'callback_data': f'discard:{slug}'},
         ]]
     }
 
@@ -184,15 +181,15 @@ def send_updates_approval(batch_id, count, titles):
         return None
 
     msg_id = resp['result']['message_id']
-    print(f'TELEGRAM: Updates approval sent (id={msg_id})')
-    print(f'  Preview: {preview_url}')
+    print(f'  TELEGRAM: Sent approval for "{title[:50]}" (msg={msg_id})')
 
     pending = _load_pending()
-    pending[batch_id] = {
-        'slug':       batch_id,
-        'title':      f'{count} govt update(s)',
+    pending[slug] = {
+        'slug':       slug,
+        'title':      title,
+        'entry_id':   entry_id,
         'message_id': msg_id,
-        'type':       'updates_batch',
+        'type':       'single_update',
         'sent_at':    time.time(),
     }
     _save_pending(pending)

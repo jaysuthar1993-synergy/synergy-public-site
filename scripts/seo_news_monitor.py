@@ -58,10 +58,11 @@ except ImportError:
 # ─────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────
-REPO_ROOT         = Path(__file__).parent.parent
-SEEN_FILE         = Path(__file__).parent / 'seo_news_seen.json'
-UPDATES_DATA_FILE = REPO_ROOT / 'src' / 'data' / 'updatesData.js'
-LAST_COUNT_FILE   = REPO_ROOT / '.seo_news_last_count'
+REPO_ROOT              = Path(__file__).parent.parent
+SEEN_FILE              = Path(__file__).parent / 'seo_news_seen.json'
+UPDATES_DATA_FILE      = REPO_ROOT / 'src' / 'data' / 'updatesData.js'
+UPDATES_PENDING_FILE   = Path(__file__).parent / 'seo_updates_pending.json'
+LAST_COUNT_FILE        = REPO_ROOT / '.seo_news_last_count'
 GEMINI_API_KEY    = os.environ.get('GEMINI_API_KEY')
 YOUTUBE_API_KEY   = os.environ.get('YOUTUBE_API_KEY')
 TODAY             = date.today().isoformat()
@@ -621,43 +622,19 @@ Return ONLY a valid JSON object (no markdown, no extra text):
         return None
 
 
-def append_to_updates_file(item, summary):
-    """Append one entry to updatesData.js before the closing ];"""
-    if not UPDATES_DATA_FILE.exists():
-        print(f'  ERROR: {UPDATES_DATA_FILE} not found')
-        return False
-
-    content = UPDATES_DATA_FILE.read_text(encoding='utf-8')
-    insert_pos = content.rfind('];')
-    if insert_pos == -1:
-        print('  ERROR: updatesData.js format unexpected — cannot find ];')
-        return False
-
-    # Build a unique id
-    safe_src = re.sub(r'[^a-z0-9]+', '-', item['source'].lower())[:18].strip('-')
-    safe_date = item.get('published', TODAY)
+def _build_entry(item, summary):
+    """Build the JS entry string and entry_id for a govt update. Returns (entry_id, js_string) or (None, None)."""
+    safe_src   = re.sub(r'[^a-z0-9]+', '-', item['source'].lower())[:18].strip('-')
+    safe_date  = item.get('published', TODAY)
     safe_title = re.sub(r'[^a-z0-9]+', '-', summary['title'].lower())[:28].strip('-')
-    entry_id = f"{safe_src}-{safe_date[:10]}-{safe_title}"
+    entry_id   = f"{safe_src}-{safe_date[:10]}-{safe_title}"
 
-    # Dedup by ID
-    if f"id: '{entry_id}'" in content:
-        print(f'  Already exists — skipping duplicate: {entry_id}')
-        return False
-
-    # Dedup by title (catches manual entries with different ID format)
-    title_slug = re.sub(r'[^a-z0-9]+', '-', summary['title'].lower())[:40].strip('-')
-    if title_slug and title_slug in content.lower():
-        print(f'  Title already present — skipping duplicate: {summary["title"][:60]}')
-        return False
-
-    # Build keyPoints array JS string
-    kp_list = summary.get('keyPoints', [])
-    kp_lines = []
-    for kp in kp_list:
-        kp_lines.append(f"      {{ label: '{_js_quote(kp.get('label',''))}', text: '{_js_quote(kp.get('text',''))}' }},")
+    kp_list  = summary.get('keyPoints', [])
+    kp_lines = [f"      {{ label: '{_js_quote(kp.get('label',''))}', text: '{_js_quote(kp.get('text',''))}' }},"
+                for kp in kp_list]
     kp_js = '\n'.join(kp_lines)
 
-    entry = f"""  {{
+    js = f"""  {{
     id: '{entry_id}',
     type: 'govt',
     title: '{_js_quote(summary['title'])}',
@@ -672,10 +649,95 @@ def append_to_updates_file(item, summary):
     relatedSlug: '',
   }},
 """
+    return entry_id, js
 
-    new_content = content[:insert_pos] + entry + content[insert_pos:]
+
+def append_to_updates_file(item, summary):
+    """Append one entry to updatesData.js before the closing ]; Returns entry_id or None."""
+    if not UPDATES_DATA_FILE.exists():
+        print(f'  ERROR: {UPDATES_DATA_FILE} not found')
+        return None
+
+    content = UPDATES_DATA_FILE.read_text(encoding='utf-8')
+    insert_pos = content.rfind('];')
+    if insert_pos == -1:
+        print('  ERROR: updatesData.js format unexpected — cannot find ];')
+        return None
+
+    entry_id, js_entry = _build_entry(item, summary)
+
+    # Dedup by ID
+    if f"id: '{entry_id}'" in content:
+        print(f'  Already exists — skipping duplicate: {entry_id}')
+        return None
+
+    # Dedup by title (catches manual entries with different ID format)
+    title_slug = re.sub(r'[^a-z0-9]+', '-', summary['title'].lower())[:40].strip('-')
+    if title_slug and title_slug in content.lower():
+        print(f'  Title already present — skipping duplicate: {summary["title"][:60]}')
+        return None
+
+    new_content = content[:insert_pos] + js_entry + content[insert_pos:]
     UPDATES_DATA_FILE.write_text(new_content, encoding='utf-8')
-    return True
+    return entry_id
+
+
+def save_to_pending_updates(entry_id, js_entry, item, summary):
+    """Save a generated update to the pending store (not yet written to updatesData.js)."""
+    pending = {}
+    if UPDATES_PENDING_FILE.exists():
+        try:
+            pending = json.loads(UPDATES_PENDING_FILE.read_text(encoding='utf-8'))
+        except Exception:
+            pending = {}
+    pending[entry_id] = {
+        'entry_id':  entry_id,
+        'js_entry':  js_entry,
+        'title':     summary['title'],
+        'summary':   summary['summary'],
+        'source':    item['source'],
+        'date':      item.get('published', TODAY),
+    }
+    UPDATES_PENDING_FILE.write_text(json.dumps(pending, indent=2, ensure_ascii=False), encoding='utf-8')
+
+
+def write_pending_update_to_file(entry_id):
+    """Called by poller on Approve — inserts the pending entry into updatesData.js."""
+    if not UPDATES_PENDING_FILE.exists():
+        return False, 'Pending file not found'
+
+    pending = {}
+    try:
+        pending = json.loads(UPDATES_PENDING_FILE.read_text(encoding='utf-8'))
+    except Exception as e:
+        return False, f'Pending JSON error: {e}'
+
+    if entry_id not in pending:
+        return False, f'Entry {entry_id} not in pending store'
+
+    record   = pending[entry_id]
+    js_entry = record['js_entry']
+
+    if not UPDATES_DATA_FILE.exists():
+        return False, 'updatesData.js not found'
+
+    content    = UPDATES_DATA_FILE.read_text(encoding='utf-8')
+    insert_pos = content.rfind('];')
+    if insert_pos == -1:
+        return False, 'updatesData.js has unexpected format'
+
+    # Dedup check
+    if f"id: '{entry_id}'" in content:
+        del pending[entry_id]
+        UPDATES_PENDING_FILE.write_text(json.dumps(pending, indent=2, ensure_ascii=False), encoding='utf-8')
+        return False, 'Already in file (duplicate)'
+
+    new_content = content[:insert_pos] + js_entry + content[insert_pos:]
+    UPDATES_DATA_FILE.write_text(new_content, encoding='utf-8')
+
+    del pending[entry_id]
+    UPDATES_PENDING_FILE.write_text(json.dumps(pending, indent=2, ensure_ascii=False), encoding='utf-8')
+    return True, record['title']
 
 
 def run_monitor_auto(mode='all', days_back=3):
@@ -703,8 +765,7 @@ def run_monitor_auto(mode='all', days_back=3):
         return
 
     print(f'\n=== {len(all_found)} NEW ITEM(S) — filtering with Gemini ===')
-    added = 0
-    _ADDED_SUMMARIES = []
+    queued = 0
     for item in all_found:
         print(f'\n  [{item["source"]}] {item["title"][:80]}')
 
@@ -717,30 +778,36 @@ def run_monitor_auto(mode='all', days_back=3):
         if not summary:
             print('  Summary failed — skipping.')
             continue
-        ok = append_to_updates_file(item, summary)
-        if ok:
-            print(f'  ✓ Added: {summary["title"][:70]}')
-            added += 1
-            _ADDED_SUMMARIES.append(summary)
-        else:
-            print('  Skipped (duplicate or write error).')
 
-    LAST_COUNT_FILE.write_text(str(added), encoding='utf-8')
-    print(f'\n✅ {added} update(s) written to updatesData.js')
+        entry_id, js_entry = _build_entry(item, summary)
 
-    # Send Telegram approval if anything was added
-    if added > 0:
+        # Skip if already in updatesData.js
+        if UPDATES_DATA_FILE.exists():
+            content = UPDATES_DATA_FILE.read_text(encoding='utf-8')
+            if f"id: '{entry_id}'" in content:
+                print(f'  Already in file — skipping duplicate.')
+                continue
+            title_slug = re.sub(r'[^a-z0-9]+', '-', summary['title'].lower())[:40].strip('-')
+            if title_slug and title_slug in content.lower():
+                print(f'  Title already present — skipping duplicate.')
+                continue
+
+        # Save to pending store (not written to JS file yet)
+        save_to_pending_updates(entry_id, js_entry, item, summary)
+
+        # Send individual Telegram approval message
         try:
-            from seo_telegram import send_updates_approval
-            batch_id = f'__updates_{TODAY}'
-            added_titles = [
-                s['title'] for s in _ADDED_SUMMARIES
-            ]
-            send_updates_approval(batch_id, added, added_titles)
-            print(f'  Telegram approval request sent.')
+            from seo_telegram import send_single_update_approval
+            send_single_update_approval(entry_id, summary['title'], summary['summary'])
+            queued += 1
         except Exception as e:
-            print(f'  Telegram notification failed: {e}')
-            print('  (Updates are on develop — merge manually to master when ready.)')
+            print(f'  Telegram send failed: {e}')
+
+    LAST_COUNT_FILE.write_text(str(queued), encoding='utf-8')
+    if queued:
+        print(f'\n✅ {queued} update(s) queued — Telegram approval sent for each.')
+    else:
+        print('\nNothing new to queue.')
 
 
 def main():

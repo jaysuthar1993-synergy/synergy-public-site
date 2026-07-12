@@ -172,34 +172,60 @@ def discard_article(slug, title, msg_id):
     return True
 
 
-def approve_updates_batch(batch_id, title, msg_id):
-    """Merge develop → master so govt updates go live."""
-    print(f'Approving updates batch: {batch_id}')
+def approve_single_update(slug, title, msg_id):
+    """
+    Write one pending update to updatesData.js, commit to develop, merge to master.
+    slug format: '__update_<entry_id>'
+    """
+    entry_id = slug[len('__update_'):]
+    print(f'Approving single update: {entry_id}')
+
+    # Import the write helper from the monitor script
+    import sys
+    sys.path.insert(0, str(REPO_ROOT / 'scripts'))
+    from seo_news_monitor import write_pending_update_to_file
 
     _git('checkout', 'develop')
     _git('pull', 'origin', 'develop')
 
+    ok, result = write_pending_update_to_file(entry_id)
+    if not ok:
+        print(f'  Write failed: {result}')
+        edit_message_text(msg_id, f'ERROR: Could not write update.\n`{result}`')
+        return False
+
+    # Commit to develop
+    _run(['git', 'add', 'src/data/updatesData.js'], cwd=str(REPO_ROOT))
+    commit = _git('commit', '-m', f'feat(updates): publish approved update — {result[:60]}')
+    if commit.returncode != 0:
+        print(f'  Commit failed: {commit.stderr}')
+        return False
+
+    _git('push', 'origin', 'develop')
+
+    # Merge to master
     _git('checkout', 'master')
     _git('pull', 'origin', 'master')
     merge = _git('merge', 'develop', '--no-edit')
     if merge.returncode != 0:
         print(f'  Merge failed: {merge.stderr}')
-        edit_message_text(msg_id, f'ERROR: Could not merge to master.\n```{merge.stderr[:200]}```')
+        edit_message_text(msg_id, f'ERROR: Merge to master failed.\n```{merge.stderr[:200]}```')
         return False
 
     push = _git('push', 'origin', 'master')
+    _git('checkout', 'develop')
+
     if push.returncode != 0:
         print(f'  Push failed: {push.stderr}')
         return False
 
-    _git('checkout', 'develop')
-
     edit_message_text(msg_id,
         f'*Published!*\n\n'
-        f'{title} now live at synergyfuturecorp.com/updates in ~2 min.'
+        f'*{result[:80]}*\n\n'
+        f'Live at synergyfuturecorp.com/updates in ~2 min.'
     )
-    remove_pending(batch_id)
-    print(f'  Updates published to master.')
+    remove_pending(slug)
+    print(f'  Published: {result}')
     return True
 
 
@@ -248,14 +274,14 @@ def run_once():
 
         title = item.get('title', slug)
 
-        # Govt updates batch uses slug prefix '__updates_'
-        if slug.startswith('__updates_'):
+        # Per-update approval (slug prefix '__update_')
+        if slug.startswith('__update_'):
             if action == 'approve':
-                answer_callback(callback_id, 'Publishing updates to master...')
-                approve_updates_batch(slug, title, msg_id)
+                answer_callback(callback_id, 'Writing and publishing update...')
+                approve_single_update(slug, title, msg_id)
             elif action == 'discard':
-                answer_callback(callback_id, 'Skipped — updates stay on develop only.')
-                edit_message_text(msg_id, f'*Skipped.* Updates remain on develop branch and will not go live.')
+                answer_callback(callback_id, 'Skipped.')
+                edit_message_text(msg_id, f'*Skipped.* "{title[:60]}" will not be published.')
                 remove_pending(slug)
             else:
                 answer_callback(callback_id, 'Unknown action.')

@@ -73,19 +73,22 @@ if ($dry) {
 
 # Commit and push to develop first
 $today = Get-Date -Format "yyyy-MM-dd"
-git add src/data/updatesData.js scripts/seo_news_seen.json 2>$null
+# Save the seen-items tracker (prevents re-processing same RSS entries)
+git add scripts/seo_news_seen.json scripts/seo_updates_pending.json 2>$null
 git diff --cached --quiet
 if ($LASTEXITCODE -ne 0) {
-    git commit -m "feat(seo): add $count govt update(s) ($today) [pending Telegram approval]"
+    git commit -m "chore(seo): update seen tracker ($today)"
     git push origin develop
+}
 
-    # NOTE: NOT merging to master here.
-    # seo_news_monitor.py sends a Telegram message with Approve/Skip buttons.
-    # seo_poller.py merges develop → master when Approve is pressed.
-    # Cloudflare Pages then deploys automatically via IndexNow.
+# NOTE: updatesData.js is NOT committed here.
+# Each update is saved to seo_updates_pending.json.
+# seo_news_monitor.py sends individual Telegram messages — one per update.
+# seo_poller.py writes the entry, commits, and merges to master when Approve is pressed.
 
+if ($count -gt 0) {
     Write-Host ""
-    Write-Host "OK $count update(s) pushed to develop — awaiting Telegram approval." -ForegroundColor Cyan
+    Write-Host "OK $count update(s) queued — Telegram approval sent for each." -ForegroundColor Cyan
 } else {
-    Write-Host "Nothing staged to commit (updatesData.js unchanged)." -ForegroundColor Yellow
+    Write-Host "Nothing new found." -ForegroundColor Yellow
 }
