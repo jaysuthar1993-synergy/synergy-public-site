@@ -86,14 +86,9 @@ if ($LASTEXITCODE -ne 0) {
     git push origin master
     git checkout develop
 
-    # Ping Google to re-crawl sitemap now that new content is live
-    $pingUrl = "https://www.google.com/ping?sitemap=https://synergyfuturecorp.com/sitemap.xml"
-    try {
-        Invoke-WebRequest -Uri $pingUrl -UseBasicParsing -TimeoutSec 10 | Out-Null
-        Write-Host "  Google sitemap pinged." -ForegroundColor Green
-    } catch {
-        Write-Host "  Sitemap ping failed (non-critical)." -ForegroundColor Yellow
-    }
+    # NOTE: No manual sitemap ping needed.
+    # Cloudflare Pages automatically pings search engines via IndexNow on every deploy.
+    # Google sitemap is submitted once via Search Console and crawled on its own schedule.
 
     Write-Host ""
     Write-Host "OK $count update(s) live on synergyfuturecorp.com/updates" -ForegroundColor Green
