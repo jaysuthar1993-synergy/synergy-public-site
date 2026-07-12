@@ -12,6 +12,7 @@ import sys
 import json
 import subprocess
 import time
+import urllib.request
 from pathlib import Path
 
 REPO_ROOT    = Path(__file__).parent.parent
@@ -65,6 +66,16 @@ def approve_article(slug, title, msg_id):
         return False
 
     _git('checkout', 'develop')
+
+    # Ping Google to re-crawl sitemap now that new article is live
+    try:
+        urllib.request.urlopen(
+            'https://www.google.com/ping?sitemap=https://synergyfuturecorp.com/sitemap.xml',
+            timeout=10
+        )
+        print('  Google sitemap pinged.')
+    except Exception:
+        print('  Sitemap ping failed (non-critical).')
 
     edit_message_text(msg_id,
         f'*Published!*\n\n'

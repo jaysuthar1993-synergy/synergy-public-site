@@ -43,11 +43,11 @@ if ($branch -ne "develop") {
 }
 git pull origin develop --quiet
 
-# Run monitor
+# Run monitor — govt sources only for updates page (YouTube is handled by blog pipeline)
 if ($mode) {
     & $Python scripts/seo_news_monitor.py --auto $mode
 } else {
-    & $Python scripts/seo_news_monitor.py --auto
+    & $Python scripts/seo_news_monitor.py --auto --govt-only
 }
 
 $exitCode = $LASTEXITCODE
@@ -71,17 +71,32 @@ if ($dry) {
     exit 0
 }
 
-# Commit and push
+# Commit and push to develop first
 $today = Get-Date -Format "yyyy-MM-dd"
 git add src/data/updatesData.js scripts/seo_news_seen.json 2>$null
 git diff --cached --quiet
 if ($LASTEXITCODE -ne 0) {
-    git commit -m "feat(seo): add $count news update(s) ($today)"
+    git commit -m "feat(seo): add $count govt update(s) ($today)"
     git push origin develop
 
+    # Merge to master so updates go live on production immediately
+    git checkout master
+    git pull origin master --quiet
+    git merge develop --no-edit --quiet
+    git push origin master
+    git checkout develop
+
+    # Ping Google to re-crawl sitemap now that new content is live
+    $pingUrl = "https://www.google.com/ping?sitemap=https://synergyfuturecorp.com/sitemap.xml"
+    try {
+        Invoke-WebRequest -Uri $pingUrl -UseBasicParsing -TimeoutSec 10 | Out-Null
+        Write-Host "  Google sitemap pinged." -ForegroundColor Green
+    } catch {
+        Write-Host "  Sitemap ping failed (non-critical)." -ForegroundColor Yellow
+    }
+
     Write-Host ""
-    Write-Host "✓ $count update(s) pushed → Cloudflare Pages deploying..." -ForegroundColor Green
-    Write-Host "  Preview: https://develop.synergy-public-site.pages.dev/updates" -ForegroundColor Cyan
+    Write-Host "OK $count update(s) live on synergyfuturecorp.com/updates" -ForegroundColor Green
 } else {
     Write-Host "Nothing staged to commit (updatesData.js unchanged)." -ForegroundColor Yellow
 }
