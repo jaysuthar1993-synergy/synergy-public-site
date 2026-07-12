@@ -6,8 +6,53 @@ import { getUpdatesByType } from '../../data/updatesData';
 
 const govtUpdates = getUpdatesByType('govt');
 
+const KP_COLORS = [
+  { bg: '#f0fdf4', border: '#86efac', label: '#166534' },
+  { bg: '#eff6ff', border: '#93c5fd', label: '#1e40af' },
+  { bg: '#fdf4ff', border: '#d8b4fe', label: '#7e22ce' },
+];
+
+function KeyPointsInfographic({ keyPoints }) {
+  if (!keyPoints || keyPoints.length === 0) return null;
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+      gap: 8,
+      margin: '14px 0',
+    }}>
+      {keyPoints.map((kp, i) => {
+        const c = KP_COLORS[i % KP_COLORS.length];
+        return (
+          <div key={i} style={{
+            background: c.bg,
+            border: `1px solid ${c.border}`,
+            borderRadius: 8,
+            padding: '10px 12px',
+          }}>
+            <div style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: c.label,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              marginBottom: 5,
+            }}>
+              {kp.label}
+            </div>
+            <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.45 }}>
+              {kp.text}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function GovtUpdateCard({ update }) {
   const [expanded, setExpanded] = useState(false);
+
   return (
     <div style={{
       background: '#fff',
@@ -26,44 +71,71 @@ function GovtUpdateCard({ update }) {
           borderRadius: 4,
           whiteSpace: 'nowrap',
           marginTop: 2,
+          flexShrink: 0,
         }}>
           GOVT
         </span>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 4px 0' }}>
             {update.source} · {new Date(update.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: '#1e293b', margin: '0 0 8px 0', lineHeight: 1.4 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: '#1e293b', margin: '0 0 10px 0', lineHeight: 1.4 }}>
             {update.title}
           </h3>
+
+          {/* Summary always visible */}
+          <p style={{ fontSize: 14, color: '#475569', margin: '0 0 8px 0', lineHeight: 1.65 }}>
+            {update.summary}
+          </p>
+
+          {/* Expanded content */}
           {expanded && (
-            <>
-              <p style={{ fontSize: 14, color: '#475569', margin: '0 0 12px 0', lineHeight: 1.6 }}>{update.summary}</p>
+            <div>
+              {/* Key points infographic */}
+              <KeyPointsInfographic keyPoints={update.keyPoints} />
+
+              {/* Tally impact */}
               {update.tallyImpact && (
                 <div style={{
                   background: '#f0f9ff',
                   border: '1px solid #bae6fd',
                   borderRadius: 8,
-                  padding: '10px 14px',
+                  padding: '11px 14px',
                   fontSize: 13,
                   color: '#0369a1',
-                  marginBottom: 12,
+                  margin: '14px 0',
+                  lineHeight: 1.55,
                 }}>
-                  <strong>Tally impact:</strong> {update.tallyImpact}
+                  <strong>Step-by-step in Tally:</strong> {update.tallyImpact}
                 </div>
               )}
-              {update.url && (
-                <a
-                  href={update.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ fontSize: 13, color: '#4F46E5', textDecoration: 'none' }}
-                >
-                  View official source →
-                </a>
-              )}
-            </>
+
+              {/* Links row */}
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 12 }}>
+                {update.relatedSlug && (
+                  <Link href={`/blog/${update.relatedSlug}`} style={{
+                    fontSize: 13,
+                    color: '#4F46E5',
+                    textDecoration: 'none',
+                    fontWeight: 600,
+                  }}>
+                    Full guide →
+                  </Link>
+                )}
+                {update.url && (
+                  <a
+                    href={update.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontSize: 13, color: '#64748b', textDecoration: 'none' }}
+                  >
+                    Official source →
+                  </a>
+                )}
+              </div>
+            </div>
           )}
+
           <button
             onClick={() => setExpanded(!expanded)}
             style={{
@@ -73,10 +145,11 @@ function GovtUpdateCard({ update }) {
               fontSize: 13,
               cursor: 'pointer',
               padding: 0,
-              marginTop: 6,
+              marginTop: 10,
+              display: 'block',
             }}
           >
-            {expanded ? 'Show less ↑' : 'Read more ↓'}
+            {expanded ? 'Show less ↑' : 'What does this mean for me? ↓'}
           </button>
         </div>
       </div>
@@ -106,15 +179,15 @@ export default function UpdatesClient() {
             GST, Income Tax &amp; Tally Updates
           </h1>
           <p style={{ fontSize: 15, color: '#64748b', margin: 0 }}>
-            Latest government circulars and notices for Indian accountants — CBIC, CBDT, GST Portal, MCA and RBI.
-            Monitored continuously and updated automatically.
+            Plain-English summaries of government circulars that affect Indian accountants.
+            Updated continuously from CBIC, CBDT, GST Portal, MCA and RBI.
           </p>
         </div>
 
         {govtUpdates.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94a3b8' }}>
-            <p style={{ fontSize: 16 }}>Government updates will appear here shortly.</p>
-            <p style={{ fontSize: 13, marginTop: 8 }}>Monitoring CBIC, CBDT, GST Portal, MCA21, RBI, and PIB Finance.</p>
+            <p style={{ fontSize: 16 }}>Updates will appear here shortly.</p>
+            <p style={{ fontSize: 13, marginTop: 8 }}>Monitoring CBIC, CBDT, GST Portal, MCA21, RBI and PIB Finance.</p>
           </div>
         ) : (
           govtUpdates.map(u => <GovtUpdateCard key={u.id} update={u} />)

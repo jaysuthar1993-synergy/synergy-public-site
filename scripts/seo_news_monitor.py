@@ -96,7 +96,7 @@ CA_CHANNELS = [
         'keywords':   ['circular', 'notification', 'bank', 'reconciliation', 'audit'],
     },
     {
-        'name':       'TallyERP',
+        'name':       'Tally Solutions',
         'channel_id': 'UCMqVGK9GlUH8sTLf7hq2sFg',
         'keywords':   ['bank statement', 'reconciliation', 'import', 'excel', 'voucher'],
     },
@@ -104,6 +104,26 @@ CA_CHANNELS = [
         'name':       'ClearTax India',
         'channel_id': 'UCt5bXjFOK-LFkAcCr-WoJlw',
         'keywords':   ['gst', 'income tax', 'tds', 'bank', 'reconciliation'],
+    },
+    {
+        'name':       'CA Rachna Ranade',
+        'channel_id': 'UCvOHe3ExwKRoqns_Uo_2_8Q',
+        'keywords':   ['gst', 'income tax', 'tds', 'bank', 'reconciliation', 'itr'],
+    },
+    {
+        'name':       'Chartered Accountant',
+        'channel_id': 'UCl9c3q9VWdEiJChiMN-Pz6A',
+        'keywords':   ['tally', 'gst', 'bank', 'circular', 'notification'],
+    },
+    {
+        'name':       'GST Panacea',
+        'channel_id': 'UCEMRIkMPnfKmzMUVmrhrUlg',
+        'keywords':   ['gst', 'circular', 'notification', 'return', 'reconciliation'],
+    },
+    {
+        'name':       'Accounts Gyaan',
+        'channel_id': 'UCfJ4l1IS7MBkKGBHBiOAGkA',
+        'keywords':   ['tally', 'bank', 'gst', 'entry', 'ledger', 'voucher'],
     },
 ]
 
@@ -383,15 +403,22 @@ CONTEXT: {summary_text[:1000] if summary_text else '(no summary available — wr
 TASK: Write a PRACTICAL blog article explaining what this update/news means for Indian CAs,
 accountants, and small business owners who use Tally for accounting.
 
+WRITING PHILOSOPHY (non-negotiable):
+- Deliver true value first — this is not an advertisement
+- Write for a busy CA with 5 minutes, not for a search engine bot
+- Less information, more insight — one sharp point beats five vague ones
+- Plain English: explain acronyms on first use, avoid bureaucratic language
+- One paragraph = one idea. Max 3 sentences per paragraph.
+- DO NOT mention Synergy Automation in every section — mention it ONCE naturally at the end
+- The reader's time is the most valuable thing on this page — do not waste it
+
 WRITING RULES:
-- Hook the reader immediately — open with a real consequence or surprising fact
-- Use short paragraphs (2-3 sentences max) — keep the reader scrolling
-- Be specific: name the section/menu/report in {TALLY_VERSION} where the action happens
-- Lead with what CHANGED and WHY it matters for accountants right now
-- Explain practical impact on Tally users with concrete steps
-- End with clear action items
-- Include a strong FAQ block with questions real CAs would search for
-- NEVER duplicate an article topic — this article must cover unique ground
+- Open with the real-world consequence (money, penalty, deadline) — not background history
+- Name the exact menu path in {TALLY_VERSION} when giving Tally instructions
+- Lead with what CHANGED and WHY it matters right now
+- Every section must give the reader something actionable
+- Include a strong FAQ block with questions real CAs actually search for
+- NEVER duplicate an article topic — unique angle only
 
 OUTPUT FORMAT:
 Return ONLY a valid JavaScript object (no markdown, no export keyword — raw object only).
@@ -505,27 +532,36 @@ def generate_news_summary(item):
     source_type = 'Indian CA YouTube channel' if item['type'] == 'youtube' else 'Indian government website'
     context = item.get('summary', '')[:600]
 
-    prompt = f"""You are summarising news for Indian CAs and accountants who use Tally.
+    prompt = f"""You are summarising a government update for Indian CAs and accountants who use Tally.
 Today is {TODAY}. Tally version: {TALLY_VERSION}.
 
 SOURCE: {item['source']} ({source_type})
 HEADLINE: {item['title']}
 CONTEXT: {context if context else '(headline only — write based on the headline)'}
 
-Write a concise update summary. Return ONLY a JSON object (no markdown, no extra text):
-{{
-  "title": "Improved headline — plain English, max 100 chars",
-  "summary": "3-4 sentences: what happened, why it matters, who is affected. Simple English, no jargon.",
-  "tallyImpact": "1-2 sentences on what Tally/{TALLY_VERSION} users specifically need to do or check — name the exact menu/report if relevant."
-}}
+WRITING RULES (strict):
+- Plain English only — write as if explaining to a small business owner, not a CA exam student
+- No jargon without explanation. If you must use "GSTR-3B", immediately say what it is in brackets
+- Be direct: "You need to do X by Y date" beats "It is advised that taxpayers consider..."
+- DO NOT promote any product — this is a news summary, not an ad
+- DO NOT say "we" or mention Synergy Automation in summary/keyPoints
+- tallyImpact: name the EXACT menu path in TallyPrime (e.g. Gateway → Statutory Reports → GSTR-3B)
+- No duplication of information across fields
 
-Rules:
-- Never name competitors
-- Never say "we" — this is a news summary, not a Synergy Automation promotion
-- Keep tallyImpact practical and specific to {TALLY_VERSION}
+Return ONLY a valid JSON object (no markdown, no extra text):
+{{
+  "title": "Improved plain-English headline — max 100 chars. Who it affects + what changed.",
+  "summary": "3-4 sentences in simple English. What happened? Why should I care? What do I need to do? Write for someone who has 30 seconds.",
+  "keyPoints": [
+    {{"label": "Who is affected", "text": "Specific businesses or taxpayers this applies to — be concrete"}},
+    {{"label": "What changed", "text": "One clear sentence on the actual change or new rule"}},
+    {{"label": "What to do now", "text": "The single most important action with a deadline if any"}}
+  ],
+  "tallyImpact": "Exact step-by-step action in {TALLY_VERSION}: name the menu path and what entry/report to check."
+}}
 """
 
-    raw = _call_gemini(prompt, max_tokens=400, temperature=0.4)
+    raw = _call_gemini(prompt, max_tokens=600, temperature=0.3)
     if not raw:
         return None
     try:
@@ -555,15 +591,26 @@ def append_to_updates_file(item, summary):
     safe_title = re.sub(r'[^a-z0-9]+', '-', summary['title'].lower())[:28].strip('-')
     entry_id = f"{safe_src}-{safe_date[:10]}-{safe_title}"
 
+    # Build keyPoints array JS string
+    kp_list = summary.get('keyPoints', [])
+    kp_lines = []
+    for kp in kp_list:
+        kp_lines.append(f"      {{ label: '{_js_quote(kp.get('label',''))}', text: '{_js_quote(kp.get('text',''))}' }},")
+    kp_js = '\n'.join(kp_lines)
+
     entry = f"""  {{
     id: '{entry_id}',
-    type: '{item['type']}',
+    type: 'govt',
     title: '{_js_quote(summary['title'])}',
     source: '{_js_quote(item['source'])}',
     date: '{safe_date[:10]}',
     summary: '{_js_quote(summary['summary'])}',
+    keyPoints: [
+{kp_js}
+    ],
+    tallyImpact: '{_js_quote(summary.get('tallyImpact',''))}',
     url: '{_js_quote(item.get('url', ''))}',
-    tallyImpact: '{_js_quote(summary['tallyImpact'])}',
+    relatedSlug: '',
   }},
 """
 
