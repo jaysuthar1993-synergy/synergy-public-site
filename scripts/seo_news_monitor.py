@@ -320,11 +320,23 @@ def _parse_rss(feed_cfg):
     feed = feedparser.parse(feed_cfg['url'])
     items = []
     for entry in feed.entries[:10]:
+        # Use feedparser's parsed time tuple (always available if feed has a date)
+        pub_date = TODAY
+        if hasattr(entry, 'published_parsed') and entry.published_parsed:
+            try:
+                import time as _time
+                pub_date = _time.strftime('%Y-%m-%d', entry.published_parsed)
+            except Exception:
+                pass
+        elif entry.get('published', '')[:4].isdigit():
+            # Already ISO-like (YYYY-...)
+            pub_date = entry['published'][:10]
+
         items.append({
             'title':     entry.get('title', ''),
             'summary':   entry.get('summary', ''),
             'url':       entry.get('link', ''),
-            'published': entry.get('published', TODAY)[:10] if entry.get('published') else TODAY,
+            'published': pub_date,
         })
     return items
 
