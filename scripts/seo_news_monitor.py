@@ -133,67 +133,71 @@ CA_CHANNELS = [
 # Indian govt updates are gold for first-mover SEO.
 # CAs search for these immediately after circulars drop.
 GOVT_FEEDS = [
+    # Official sources — accept ALL items (empty keywords = no filter)
     {
         'name':     'CBDT (Income Tax)',
         'url':      'https://www.incometax.gov.in/iec/foportal/rss/whatsnew',
         'type':     'rss',
-        'keywords': ['bank', 'tds', 'reconciliation', 'statement', 'tally', 'return'],
+        'keywords': [],
     },
     {
         'name':     'CBIC GST',
         'url':      'https://www.cbic.gov.in/htdocs-cbec/gst/gst-updates.rss',
         'type':     'rss',
-        'keywords': ['gst', 'return', 'reconciliation', 'bank', 'circular', 'notification'],
+        'keywords': [],
     },
     {
         'name':     'GST Portal News',
         'url':      'https://www.gst.gov.in/newsandupdates',
         'type':     'scrape',
-        'keywords': ['bank', 'reconciliation', 'tds', 'return', 'gstr'],
+        'keywords': [],
         'selector': '.news-item, .update-item, .list-item',
     },
     {
         'name':     'MCA (Company Affairs)',
         'url':      'https://www.mca.gov.in/MinistryV2/rss.html',
         'type':     'rss',
-        'keywords': ['bank', 'audit', 'account', 'compliance', 'circular'],
+        'keywords': [],
     },
     {
         'name':     'RBI Press Releases',
         'url':      'https://www.rbi.org.in/Scripts/RSS.aspx?Id=316',
         'type':     'rss',
-        'keywords': ['bank', 'reconciliation', 'statement', 'account', 'circular'],
+        'keywords': [],
     },
     {
         'name':     'PIB Finance Ministry',
         'url':      'https://www.pib.gov.in/RssMain.aspx?ModId=6&Lang=1&Regid=3',
         'type':     'rss',
-        'keywords': ['gst', 'income tax', 'tds', 'bank', 'audit', 'tally'],
+        'keywords': [],
     },
     # ── Twitter/X via Nitter RSS (free, no API key) ──
+    # Light keyword filter for social — exclude pure promotional/event tweets
     {
         'name':     'CBIC India (Twitter)',
         'url':      'https://nitter.net/CBIC_India/rss',
         'type':     'rss',
-        'keywords': ['gst', 'circular', 'notification', 'bank', 'reconciliation'],
+        'keywords': ['gst', 'circular', 'notification', 'gstr', 'itc', 'e-invoice',
+                     'return', 'filing', 'deadline', 'extension', 'tax', 'rate'],
     },
     {
         'name':     'Income Tax India (Twitter)',
         'url':      'https://nitter.net/IncomeTaxIndia/rss',
         'type':     'rss',
-        'keywords': ['tds', 'bank', 'statement', 'return', 'circular', 'refund'],
+        'keywords': ['tax', 'tds', 'tcs', 'return', 'circular', 'refund',
+                     'itr', 'filing', 'deadline', 'notice', 'compliance', 'audit'],
     },
     {
         'name':     'ICAI (Twitter)',
         'url':      'https://nitter.net/theicai/rss',
         'type':     'rss',
-        'keywords': ['circular', 'notification', 'bank', 'reconciliation', 'audit'],
+        'keywords': ['circular', 'notification', 'audit', 'compliance', 'tax', 'gst', 'accounting', 'guidelines'],
     },
     {
         'name':     'MCA India (Twitter)',
         'url':      'https://nitter.net/MCA21India/rss',
         'type':     'rss',
-        'keywords': ['bank', 'audit', 'account', 'compliance', 'circular'],
+        'keywords': ['audit', 'compliance', 'circular', 'company', 'form', 'filing', 'deadline'],
     },
 ]
 
@@ -222,6 +226,8 @@ def save_seen(seen):
 
 
 def is_relevant(text, keywords):
+    if not keywords:
+        return True
     text_lower = text.lower()
     return any(kw.lower() in text_lower for kw in keywords)
 
@@ -319,7 +325,7 @@ def check_govt_feeds(seen):
 def _parse_rss(feed_cfg):
     feed = feedparser.parse(feed_cfg['url'])
     items = []
-    for entry in feed.entries[:10]:
+    for entry in feed.entries[:25]:
         # Use feedparser's parsed time tuple (always available if feed has a date)
         pub_date = TODAY
         if hasattr(entry, 'published_parsed') and entry.published_parsed:
@@ -539,6 +545,35 @@ def _js_quote(s):
     return s.replace('\\', '\\\\').replace("'", "\\'").replace('\n', ' ').replace('\r', '')
 
 
+def is_actionable_update(item):
+    """Ask Gemini: is this a real regulatory/compliance update for Indian CAs?
+    Returns True if yes, False if it's ceremonial/sports/general news."""
+    title = item.get('title', '')
+    context = item.get('summary', '')[:300]
+    prompt = f"""You are filtering news for Indian Chartered Accountants and accountants.
+
+HEADLINE: {title}
+CONTEXT: {context if context else '(headline only)'}
+
+Is this a REAL regulatory, compliance, or tax update that is actionable or informative for Indian CAs, accountants, or business owners?
+
+REAL UPDATES include: GST circulars, income tax deadlines, new ITR forms, TDS changes, MCA compliance notices, penalty announcements, new tax rules, audit guidelines, filing deadlines, utility releases, scheme extensions.
+
+NOT REAL UPDATES include: government awards ceremonies, sports achievements, book exhibitions, office renovations, PM foreign visits, diaspora events, student awareness programs, zone celebration events, motivational messages, PR tweets.
+
+Reply with ONLY a single JSON object: {{"real": true}} or {{"real": false}}"""
+
+    raw = _call_gemini(prompt, max_tokens=20, temperature=0.0)
+    if not raw:
+        return True  # if Gemini fails, default to processing the item
+    try:
+        raw = re.sub(r'^```(?:json)?\s*', '', raw.strip())
+        raw = re.sub(r'\s*```$', '', raw)
+        return json.loads(raw).get('real', True)
+    except Exception:
+        return True  # default to True on parse failure
+
+
 def generate_news_summary(item):
     """Ask Gemini for a short JSON summary suitable for updatesData.js."""
     source_type = 'Indian CA YouTube channel' if item['type'] == 'youtube' else 'Indian government website'
@@ -604,9 +639,15 @@ def append_to_updates_file(item, summary):
     safe_title = re.sub(r'[^a-z0-9]+', '-', summary['title'].lower())[:28].strip('-')
     entry_id = f"{safe_src}-{safe_date[:10]}-{safe_title}"
 
-    # Dedup — never insert if this id already exists in the file
+    # Dedup by ID
     if f"id: '{entry_id}'" in content:
         print(f'  Already exists — skipping duplicate: {entry_id}')
+        return False
+
+    # Dedup by title (catches manual entries with different ID format)
+    title_slug = re.sub(r'[^a-z0-9]+', '-', summary['title'].lower())[:40].strip('-')
+    if title_slug and title_slug in content.lower():
+        print(f'  Title already present — skipping duplicate: {summary["title"][:60]}')
         return False
 
     # Build keyPoints array JS string
@@ -661,10 +702,16 @@ def run_monitor_auto(mode='all', days_back=3):
         LAST_COUNT_FILE.write_text('0', encoding='utf-8')
         return
 
-    print(f'\n=== {len(all_found)} NEW ITEM(S) — generating summaries ===')
+    print(f'\n=== {len(all_found)} NEW ITEM(S) — filtering with Gemini ===')
     added = 0
     for item in all_found:
         print(f'\n  [{item["source"]}] {item["title"][:80]}')
+
+        # Gemini relevance gate — skip ceremonies, sports, general news
+        if not is_actionable_update(item):
+            print('  Not a real update (Gemini verdict) — skipped.')
+            continue
+
         summary = generate_news_summary(item)
         if not summary:
             print('  Summary failed — skipping.')
@@ -674,7 +721,7 @@ def run_monitor_auto(mode='all', days_back=3):
             print(f'  ✓ Added: {summary["title"][:70]}')
             added += 1
         else:
-            print('  ERROR writing to updatesData.js')
+            print('  Skipped (duplicate or write error).')
 
     LAST_COUNT_FILE.write_text(str(added), encoding='utf-8')
     print(f'\n✅ {added} update(s) written to updatesData.js')

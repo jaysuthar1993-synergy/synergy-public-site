@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { getUpdatesByType } from '../../data/updatesData';
 
-const govtUpdates = getUpdatesByType('govt');
+const ALL_UPDATES = getUpdatesByType('govt');
 
 const KP_COLORS = [
   { bg: '#f0fdf4', border: '#86efac', label: '#166534' },
@@ -160,6 +160,11 @@ function GovtUpdateCard({ update }) {
 }
 
 export default function UpdatesClient() {
+  const [showAll, setShowAll] = useState(false);
+  const INITIAL = 10;
+  const govtUpdates = showAll ? ALL_UPDATES : ALL_UPDATES.slice(0, INITIAL);
+  const hasMore = !showAll && ALL_UPDATES.length > INITIAL;
+
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
       <nav style={{
@@ -177,22 +182,39 @@ export default function UpdatesClient() {
 
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '40px 20px' }}>
         <div style={{ marginBottom: 32 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: '#1e293b', margin: '0 0 8px 0' }}>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: '#1e293b', margin: 0 }}>
             GST, Income Tax &amp; Tally Updates
           </h1>
-          <p style={{ fontSize: 15, color: '#64748b', margin: 0 }}>
-            Plain-English summaries of government circulars that affect Indian accountants.
-            Updated continuously from CBIC, CBDT, GST Portal, MCA and RBI.
-          </p>
         </div>
 
-        {govtUpdates.length === 0 ? (
+        {ALL_UPDATES.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94a3b8' }}>
             <p style={{ fontSize: 16 }}>Updates will appear here shortly.</p>
             <p style={{ fontSize: 13, marginTop: 8 }}>Monitoring CBIC, CBDT, GST Portal, MCA21, RBI and PIB Finance.</p>
           </div>
         ) : (
-          govtUpdates.map(u => <GovtUpdateCard key={u.id} update={u} />)
+          <>
+            {govtUpdates.map(u => <GovtUpdateCard key={u.id} update={u} />)}
+            {hasMore && (
+              <div style={{ textAlign: 'center', marginTop: 8, marginBottom: 8 }}>
+                <button
+                  onClick={() => setShowAll(true)}
+                  style={{
+                    background: '#fff',
+                    border: '1.5px solid #e2e8f0',
+                    borderRadius: 8,
+                    padding: '10px 28px',
+                    fontSize: 14,
+                    color: '#4F46E5',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Show all {ALL_UPDATES.length} updates
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         <div style={{
