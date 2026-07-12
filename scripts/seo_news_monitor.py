@@ -591,6 +591,11 @@ def append_to_updates_file(item, summary):
     safe_title = re.sub(r'[^a-z0-9]+', '-', summary['title'].lower())[:28].strip('-')
     entry_id = f"{safe_src}-{safe_date[:10]}-{safe_title}"
 
+    # Dedup — never insert if this id already exists in the file
+    if f"id: '{entry_id}'" in content:
+        print(f'  Already exists — skipping duplicate: {entry_id}')
+        return False
+
     # Build keyPoints array JS string
     kp_list = summary.get('keyPoints', [])
     kp_lines = []
@@ -619,14 +624,14 @@ def append_to_updates_file(item, summary):
     return True
 
 
-def run_monitor_auto(mode='all'):
+def run_monitor_auto(mode='all', days_back=3):
     """Non-interactive: find new items, generate summaries, write to updatesData.js."""
     seen = load_seen()
     all_found = []
 
     if mode in ('all', 'channels-only'):
-        print('Checking CA YouTube channels...')
-        ch_items = check_ca_channels(seen)
+        print(f'Checking CA YouTube channels (last {days_back} days)...')
+        ch_items = check_ca_channels(seen, days_back=days_back)
         print(f'  {len(ch_items)} new relevant video(s)')
         all_found.extend(ch_items)
 
@@ -667,13 +672,23 @@ def main():
     auto = '--auto' in args
     args = [a for a in args if a != '--auto']
 
+    # Parse --days N (default 3)
+    days_back = 3
+    for i, a in enumerate(args):
+        if a == '--days' and i + 1 < len(args):
+            try:
+                days_back = int(args[i + 1])
+            except ValueError:
+                pass
+    args = [a for a in args if not a.startswith('--days') and a not in [str(days_back)]]
+
     if auto:
         if '--govt-only' in args:
-            run_monitor_auto('govt-only')
+            run_monitor_auto('govt-only', days_back=days_back)
         elif '--channels-only' in args:
-            run_monitor_auto('channels-only')
+            run_monitor_auto('channels-only', days_back=days_back)
         else:
-            run_monitor_auto('all')
+            run_monitor_auto('all', days_back=days_back)
     else:
         if '--govt-only' in args:
             run_monitor('govt-only')
