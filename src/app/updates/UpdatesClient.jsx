@@ -97,7 +97,7 @@ function GovtUpdateCard({ update }) {
               <KeyPointsInfographic keyPoints={update.keyPoints} />
 
               {/* Tally impact */}
-              {update.tallyImpact && (
+              {update.tallyImpact && !/^no (direct|specific)/i.test(update.tallyImpact.trim()) && (
                 <div style={{
                   background: '#f0f9ff',
                   border: '1px solid #bae6fd',

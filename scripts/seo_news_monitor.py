@@ -570,7 +570,7 @@ Return ONLY a valid JSON object (no markdown, no extra text):
     // Do NOT always use the same 3 labels. Let the content decide.
     {{"label": "Short label (2-4 words)", "text": "One clear sentence — concrete, no filler"}}
   ],
-  "tallyImpact": "Exact step-by-step action in {TALLY_VERSION}: name the menu path and what entry/report to check."
+  "tallyImpact": "Exact step-by-step action in {TALLY_VERSION}: name the menu path and what entry/report to check. If this update has NO direct action required in Tally, return empty string \"\"."
 }}
 """
 
