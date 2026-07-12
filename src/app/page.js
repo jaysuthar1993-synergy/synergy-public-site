@@ -147,6 +147,7 @@ export default function LandingPage() {
         <div className="lp-nav-links">
           <button className="lp-nav-link" onClick={() => scrollTo('how-it-works')}>How It Works</button>
           <Link href="/blog" className="lp-nav-link">Blog</Link>
+          <Link href="/updates" className="lp-nav-link">Updates</Link>
           <Link href="/banks/hdfc" className="lp-nav-link">Bank Guides</Link>
         </div>
         <div className="lp-nav-actions">
@@ -405,6 +406,7 @@ export default function LandingPage() {
             <h4 className="lp-footer-heading">Knowledge Hub</h4>
             <ul className="lp-footer-links">
               <li><Link href="/blog" className="lp-footer-link">All Articles</Link></li>
+              <li><Link href="/updates" className="lp-footer-link">GST &amp; Tax Updates</Link></li>
               <li><Link href="/blog/excel-to-tally-complete-guide" className="lp-footer-link">Excel to Tally Guide</Link></li>
               <li><Link href="/blog/direct-posting-vs-xml-import" className="lp-footer-link">Direct Posting vs XML</Link></li>
             </ul>
