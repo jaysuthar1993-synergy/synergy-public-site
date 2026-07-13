@@ -54,6 +54,58 @@ def _ping_sitemap():
         print(f'  Sitemap submit error: {e}')
 
 
+def verify_live(url, needle=None, timeout=240, interval=15):
+    """
+    Poll the LIVE production URL until the content actually appears.
+
+    Cloudflare Pages takes ~1-2 min to build and deploy after a push, and the
+    build can fail. Pushing to master is NOT the same as being live, so we
+    confirm with our own eyes before telling the user it published.
+
+    needle: substring that must appear in the page body (None = just want 200).
+    Returns (ok: bool, detail: str).
+    """
+    import urllib.request
+    import urllib.error
+
+    deadline = time.time() + timeout
+    attempt = 0
+    last = 'no response'
+
+    while time.time() < deadline:
+        attempt += 1
+        # Cache-buster so we read the origin, not an edge/proxy copy
+        probe = f'{url}{"&" if "?" in url else "?"}cb={int(time.time())}'
+        try:
+            req = urllib.request.Request(
+                probe,
+                headers={
+                    'User-Agent': 'SynergyBot/1.0 (deploy-verify)',
+                    'Cache-Control': 'no-cache',
+                },
+            )
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                if resp.status == 200:
+                    body = resp.read().decode('utf-8', errors='ignore')
+                    if needle is None or needle in body:
+                        elapsed = int(timeout - (deadline - time.time()))
+                        print(f'  VERIFIED live after ~{elapsed}s: {url}')
+                        return True, f'verified live after ~{elapsed}s'
+                    last = 'page is up but new content not present yet'
+                else:
+                    last = f'HTTP {resp.status}'
+        except urllib.error.HTTPError as e:
+            last = f'HTTP {e.code}'
+        except Exception as e:
+            last = f'{type(e).__name__}: {str(e)[:60]}'
+
+        print(f'  verify attempt {attempt}: {last} — retrying in {interval}s')
+        time.sleep(interval)
+
+    print(f'  NOT VERIFIED after {timeout}s: {last}')
+    return False, last
+
+
 def approve_article(slug, title, msg_id):
     """Merge develop to master → article goes live."""
     print(f'Approving: {slug}')
@@ -77,15 +129,37 @@ def approve_article(slug, title, msg_id):
         return False
 
     _git('checkout', 'develop')
-    _ping_sitemap()
 
     edit_message_text(msg_id,
-        f'*Published!*\n\n'
+        f'*Merged to master.*\n\n'
         f'*{title}*\n\n'
-        f'Merged to master. Live on synergyfuturecorp.com/blog/{slug} in ~2 min.'
+        f'Waiting for Cloudflare to deploy, then verifying it is really live...'
     )
+
+    # A blog article gets its own URL, so a 200 on that URL proves it deployed.
+    article_url = f'https://synergyfuturecorp.com/blog/{slug}'
+    ok, detail = verify_live(article_url, needle=None)
+
+    if ok:
+        _ping_sitemap()
+        edit_message_text(msg_id,
+            f'*PUBLISHED & VERIFIED LIVE*\n\n'
+            f'*{title}*\n\n'
+            f'Live: {article_url}\n'
+            f'Confirmed on the live site ({detail}).\n'
+            f'Sitemap submitted to Google.'
+        )
+    else:
+        edit_message_text(msg_id,
+            f'*Merged, but NOT yet visible live*\n\n'
+            f'*{title}*\n\n'
+            f'Pushed to master, but {article_url} is still not serving after 4 min.\n'
+            f'Reason: {detail}\n\n'
+            f'Check the Cloudflare Pages build log - the build may have failed.'
+        )
+
     remove_pending(slug)
-    print(f'  Published: /blog/{slug}')
+    print(f'  Published: /blog/{slug} (live={ok})')
     return True
 
 
@@ -227,15 +301,36 @@ def approve_single_update(slug, title, msg_id, entry_id):
         print(f'  Push failed: {push.stderr}')
         return False
 
-    _ping_sitemap()
-
+    # Tell the user we are waiting, so the message is never stale/misleading
     edit_message_text(msg_id,
-        f'*Published!*\n\n'
+        f'*Merged to master.*\n\n'
         f'*{result[:80]}*\n\n'
-        f'Live: https://synergyfuturecorp.com/updates\n'
-        f'Preview: https://develop.synergy-public-site.pages.dev/updates\n\n'
-        f'Sitemap submitted to Google. Live in ~2 min.'
+        f'Waiting for Cloudflare to deploy, then verifying it is really live...'
     )
+
+    # Verify the title actually renders on the live page before claiming success.
+    # Match on a distinctive slice of the title (HTML-escaping can mangle quotes/dashes).
+    needle = result[:40].split('—')[0].split('"')[0].strip()
+    ok, detail = verify_live('https://synergyfuturecorp.com/updates', needle=needle)
+
+    if ok:
+        _ping_sitemap()
+        edit_message_text(msg_id,
+            f'*PUBLISHED & VERIFIED LIVE*\n\n'
+            f'*{result[:80]}*\n\n'
+            f'Live: https://synergyfuturecorp.com/updates\n'
+            f'Confirmed on the live site ({detail}).\n'
+            f'Sitemap submitted to Google.'
+        )
+    else:
+        edit_message_text(msg_id,
+            f'*Merged, but NOT yet visible live*\n\n'
+            f'*{result[:80]}*\n\n'
+            f'Pushed to master, but after 4 min the live page still does not show it.\n'
+            f'Reason: {detail}\n\n'
+            f'Check the Cloudflare Pages build log - the build may have failed.\n'
+            f'Preview: https://develop.synergy-public-site.pages.dev/updates'
+        )
     remove_pending(slug)
     print(f'  Published: {result}')
     return True
