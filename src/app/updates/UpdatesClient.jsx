@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { getUpdatesByType } from '../../data/updatesData';
+import ShareBar from '../../components/ShareBar';
+import '../../components/BlogPage.css';
 
 const ALL_UPDATES = getUpdatesByType('govt');
 
@@ -56,12 +58,13 @@ function GovtUpdateCard({ update }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div style={{
+    <div id={update.id} style={{
       background: '#fff',
       border: '1px solid #e2e8f0',
       borderRadius: 12,
       padding: '20px 24px',
       marginBottom: 16,
+      scrollMarginTop: 20,
     }}>
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
         <span style={{
@@ -134,6 +137,14 @@ function GovtUpdateCard({ update }) {
                     Official source →
                   </a>
                 )}
+              </div>
+
+              {/* Share — links to this specific update via #anchor */}
+              <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid #f1f5f9' }}>
+                <ShareBar
+                  url={`https://synergyfuturecorp.com/updates#${update.id}`}
+                  title={update.title}
+                />
               </div>
             </div>
           )}
