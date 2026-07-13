@@ -182,16 +182,14 @@ def discard_article(slug, title, msg_id):
     return True
 
 
-def approve_single_update(slug, title, msg_id):
+def approve_single_update(slug, title, msg_id, entry_id):
     """
     Write one pending update to updatesData.js, commit to develop, merge to master.
-    slug format: '__update_<entry_id>'
+    slug is a short hash key ('__u_<md5-12>'); entry_id comes from the pending record.
     """
-    entry_id = slug[len('__update_'):]
     print(f'Approving single update: {entry_id}')
 
     # Import the write helper from the monitor script
-    import sys
     sys.path.insert(0, str(REPO_ROOT / 'scripts'))
     from seo_news_monitor import write_pending_update_to_file
 
@@ -286,11 +284,15 @@ def run_once():
 
         title = item.get('title', slug)
 
-        # Per-update approval (slug prefix '__update_')
-        if slug.startswith('__update_'):
+        # Per-update approval (short hash slug '__u_<md5-12>')
+        if slug.startswith('__u_'):
+            entry_id = item.get('entry_id', '')
+            if not entry_id:
+                answer_callback(callback_id, 'Update record is missing its entry id.')
+                continue
             if action == 'approve':
                 answer_callback(callback_id, 'Writing and publishing update...')
-                approve_single_update(slug, title, msg_id)
+                approve_single_update(slug, title, msg_id, entry_id)
             elif action == 'discard':
                 answer_callback(callback_id, 'Skipped.')
                 edit_message_text(msg_id, f'*Skipped.* "{title[:60]}" will not be published.')

@@ -14,6 +14,7 @@ ENV VARS required in .env:
 import os
 import json
 import time
+import hashlib
 import requests
 from pathlib import Path
 
@@ -144,7 +145,10 @@ def list_pending():
 def send_single_update_approval(entry_id, title, summary):
     """
     Send one Telegram message per govt update with individual Approve/Skip buttons.
-    entry_id: the unique id for this update (used as slug key)
+    entry_id: the unique id for this update.
+
+    NOTE: Telegram caps callback_data at 64 BYTES. entry_id is far longer than
+    that, so the button carries a short hash and the pending store maps it back.
     """
     if not BOT_TOKEN or not CHAT_ID:
         print('TELEGRAM: No bot token or chat ID — skipping notification.')
@@ -159,7 +163,10 @@ def send_single_update_approval(entry_id, title, summary):
         f'[Preview /updates]({preview_url})'
     )
 
-    slug = f'__update_{entry_id}'
+    # Short, stable key that fits inside Telegram's 64-byte callback_data limit
+    short = hashlib.md5(entry_id.encode('utf-8')).hexdigest()[:12]
+    slug  = f'__u_{short}'
+
     keyboard = {
         'inline_keyboard': [[
             {'text': 'Publish this update', 'callback_data': f'approve:{slug}'},

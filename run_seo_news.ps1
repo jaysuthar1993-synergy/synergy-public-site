@@ -1,14 +1,18 @@
-# ─────────────────────────────────────────────────────────────
-#  SEO News Monitor — Local Runner
-#  Checks govt sites + CA YouTube channels for new updates,
-#  writes to updatesData.js, commits and pushes to GitHub.
+# -------------------------------------------------------------
+#  SEO News Monitor - Local Runner
+#  Checks govt sites for new updates, saves them to a pending
+#  store, and sends one Telegram approval message per update.
+#
+#  NOTE: ASCII-only on purpose. PowerShell 5.1 reads .ps1 files as
+#  ANSI when there is no BOM, so non-ASCII chars (em-dash, box-draw)
+#  get mangled into bytes that break string parsing.
 #
 #  Usage:
-#    .\run_seo_news.ps1              # check all sources
+#    .\run_seo_news.ps1              # govt sources (default)
 #    .\run_seo_news.ps1 --govt-only
 #    .\run_seo_news.ps1 --channels-only
 #    .\run_seo_news.ps1 --dry        # no push
-# ─────────────────────────────────────────────────────────────
+# -------------------------------------------------------------
 
 $ErrorActionPreference = "Stop"
 $RepoRoot = $PSScriptRoot
@@ -25,15 +29,15 @@ $env:PYTHONIOENCODING = "utf-8"
 $dry  = $false
 $mode = ""
 foreach ($arg in $args) {
-    if ($arg -eq "--dry")             { $dry  = $true }
+    if ($arg -eq "--dry")                           { $dry  = $true }
     elseif ($arg -match "^--(govt|channels)-only$") { $mode = $arg }
 }
 
 $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm"
 Write-Host ""
-Write-Host "═══════════════════════════════════════" -ForegroundColor Cyan
-Write-Host " SEO News Monitor — $timestamp" -ForegroundColor Cyan
-Write-Host "═══════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "=======================================" -ForegroundColor Cyan
+Write-Host " SEO News Monitor - $timestamp" -ForegroundColor Cyan
+Write-Host "=======================================" -ForegroundColor Cyan
 
 # Ensure on develop branch and pull latest
 $branch = git rev-parse --abbrev-ref HEAD 2>&1
@@ -43,7 +47,7 @@ if ($branch -ne "develop") {
 }
 git pull origin develop --quiet
 
-# Run monitor — govt sources only for updates page (YouTube is handled by blog pipeline)
+# Run monitor - govt sources only for updates page (YouTube handled by blog pipeline)
 if ($mode) {
     & $Python scripts/seo_news_monitor.py --auto $mode
 } else {
@@ -56,24 +60,25 @@ if ($exitCode -ne 0) {
     exit $exitCode
 }
 
-# Check how many items were added
+# How many updates were queued for approval
 $countFile = "$RepoRoot\.seo_news_last_count"
 $count = if (Test-Path $countFile) { Get-Content $countFile } else { "0" }
 $count = [int]($count.Trim())
 
 if ($count -eq 0) {
-    Write-Host "No new updates found — nothing to push." -ForegroundColor Yellow
+    Write-Host "No new updates found." -ForegroundColor Yellow
     exit 0
 }
 
 if ($dry) {
-    Write-Host "Dry run — $count update(s) written but not pushed." -ForegroundColor Yellow
+    Write-Host "Dry run - $count update(s) queued but not pushed." -ForegroundColor Yellow
     exit 0
 }
 
-# Commit and push to develop first
+# Commit the seen tracker + pending store so state survives across runs.
+# updatesData.js is NOT committed here - seo_poller.py writes each entry
+# only after you press Approve in Telegram.
 $today = Get-Date -Format "yyyy-MM-dd"
-# Save the seen-items tracker (prevents re-processing same RSS entries)
 git add scripts/seo_news_seen.json scripts/seo_updates_pending.json 2>$null
 git diff --cached --quiet
 if ($LASTEXITCODE -ne 0) {
@@ -81,14 +86,5 @@ if ($LASTEXITCODE -ne 0) {
     git push origin develop
 }
 
-# NOTE: updatesData.js is NOT committed here.
-# Each update is saved to seo_updates_pending.json.
-# seo_news_monitor.py sends individual Telegram messages — one per update.
-# seo_poller.py writes the entry, commits, and merges to master when Approve is pressed.
-
-if ($count -gt 0) {
-    Write-Host ""
-    Write-Host "OK $count update(s) queued — Telegram approval sent for each." -ForegroundColor Cyan
-} else {
-    Write-Host "Nothing new found." -ForegroundColor Yellow
-}
+Write-Host ""
+Write-Host "OK $count update(s) queued - Telegram approval sent for each." -ForegroundColor Cyan
