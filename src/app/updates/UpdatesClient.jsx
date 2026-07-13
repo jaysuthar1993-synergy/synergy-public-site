@@ -138,32 +138,41 @@ function GovtUpdateCard({ update }) {
                   </a>
                 )}
               </div>
-
-              {/* Share — links to this specific update via #anchor */}
-              <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid #f1f5f9' }}>
-                <ShareBar
-                  url={`https://synergyfuturecorp.com/updates#${update.id}`}
-                  title={update.title}
-                />
-              </div>
             </div>
           )}
 
-          <button
-            onClick={() => setExpanded(!expanded)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#4F46E5',
-              fontSize: 13,
-              cursor: 'pointer',
-              padding: 0,
-              marginTop: 10,
-              display: 'block',
-            }}
-          >
-            {expanded ? 'Show less ↑' : 'What does this mean for me? ↓'}
-          </button>
+          {/* Footer row: expand toggle + share, both always visible so a
+              reader can share straight from the collapsed card. */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            flexWrap: 'wrap',
+            marginTop: 12,
+            paddingTop: 12,
+            borderTop: '1px solid #f1f5f9',
+          }}>
+            <button
+              onClick={() => setExpanded(!expanded)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#4F46E5',
+                fontSize: 13,
+                cursor: 'pointer',
+                padding: 0,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {expanded ? 'Show less ↑' : 'What does this mean for me? ↓'}
+            </button>
+
+            <ShareBar
+              url={`https://synergyfuturecorp.com/updates#${update.id}`}
+              title={update.title}
+            />
+          </div>
         </div>
       </div>
     </div>
