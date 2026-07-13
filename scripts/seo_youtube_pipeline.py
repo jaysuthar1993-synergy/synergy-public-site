@@ -724,6 +724,49 @@ def _generate_gemini(prompt):
                 sys.exit(1)
 
 
+def _call_gemini(prompt, max_tokens=200, temperature=0.0):
+    """
+    Lightweight Gemini call for short prompts (relevance checks, classification).
+
+    Unlike _generate_gemini(), this does NOT strip markdown, does NOT force
+    article-sized token limits, and returns None on failure instead of
+    calling sys.exit() — a failed side-check must not kill the pipeline.
+    """
+    try:
+        from google import genai
+        from google.genai import types
+    except ImportError:
+        print('  Gemini SDK missing (pip install google-genai)')
+        return None
+
+    if not GEMINI_API_KEY:
+        print('  GEMINI_API_KEY not set')
+        return None
+
+    client = genai.Client(api_key=GEMINI_API_KEY)
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.5-flash-lite',
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    max_output_tokens=max_tokens,
+                    temperature=temperature,
+                ),
+            )
+            return response.text.strip() if response.text else None
+        except Exception as e:
+            err = str(e)
+            if ('429' in err or '503' in err) and attempt < 2:
+                wait = 20 + attempt * 20
+                print(f'  Gemini busy — retrying in {wait}s ({attempt + 1}/3)...')
+                time.sleep(wait)
+            else:
+                print(f'  Gemini call failed: {err[:80]}')
+                return None
+    return None
+
+
 def _clean_article(text):
     """Strip markdown code fences Gemini sometimes wraps output in."""
     text = text.strip()

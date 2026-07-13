@@ -1,6 +1,10 @@
-# ─────────────────────────────────────────────────────────────
-#  SEO Article Generator — Local Runner
+# -------------------------------------------------------------
+#  SEO Article Generator - Local Runner
 #  Generates article, commits, and pushes to GitHub.
+#
+#  NOTE: ASCII-only on purpose. PowerShell 5.1 reads .ps1 files as
+#  ANSI when there is no BOM, so non-ASCII chars (em-dash, box-draw)
+#  decode into bytes that break string/block parsing.
 #
 #  Usage (manual):
 #    .\run_seo.ps1                           # next topic from queue, interactive
@@ -9,8 +13,8 @@
 #    .\run_seo.ps1 --dry                     # test without pushing
 #
 #  Automated (Task Scheduler calls this with --auto):
-#    No interaction needed — generates, commits, pushes, done.
-# ─────────────────────────────────────────────────────────────
+#    No interaction needed - generates, commits, pushes, done.
+# -------------------------------------------------------------
 
 $ErrorActionPreference = "Stop"
 $RepoRoot = $PSScriptRoot
@@ -31,16 +35,16 @@ $topic = ""
 $dry   = $false
 $auto  = $false
 foreach ($arg in $args) {
-    if ($arg -eq "--dry")  { $dry  = $true }
+    if ($arg -eq "--dry")      { $dry  = $true }
     elseif ($arg -eq "--auto") { $auto = $true }
-    else { $topic = $arg }
+    else                       { $topic = $arg }
 }
 
 $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm"
 Write-Host ""
-Write-Host "═══════════════════════════════════════" -ForegroundColor Cyan
-Write-Host " Synergy SEO Pipeline — $timestamp" -ForegroundColor Cyan
-Write-Host "═══════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "=======================================" -ForegroundColor Cyan
+Write-Host " Synergy SEO Pipeline - $timestamp" -ForegroundColor Cyan
+Write-Host "=======================================" -ForegroundColor Cyan
 
 # Check .env exists
 if (-not (Test-Path ".env")) {
@@ -89,8 +93,8 @@ if ($exitCode -ne 0) {
 }
 
 if ($dry) {
-    Write-Host "Dry run complete — no push." -ForegroundColor Yellow
+    Write-Host "Dry run complete - no push." -ForegroundColor Yellow
 } else {
-    Write-Host "Done! Pushed to GitHub → Cloudflare Pages deploys in ~1 min." -ForegroundColor Green
-    Write-Host "Live at: https://synergyfuturecorp.com/blog/" -ForegroundColor Cyan
+    Write-Host "Done. Pushed to GitHub. Cloudflare Pages deploys in ~1 min." -ForegroundColor Green
+    Write-Host "Telegram approval sent - press Publish to go live." -ForegroundColor Cyan
 }
