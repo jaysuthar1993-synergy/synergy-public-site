@@ -222,6 +222,21 @@ export const updates = [
     url: 'https://www.incometax.gov.in/iec/foportal/',
     relatedSlug: '',
   },
+  {
+    id: 'income-tax-india-t-2026-07-13-income-tax-verification-unit',
+    type: 'govt',
+    title: 'Income Tax Verification Unit Holds Workshop on New Procedures',
+    source: 'Income Tax India (Twitter)',
+    date: '2026-07-13',
+    summary: 'The Income Tax Department recently held a workshop in Delhi to train officers on the new Standard Operating Procedures (SOPs) for the Verification Unit. This training aims to improve how tax verifications are handled. While this update focuses on internal tax department procedures, it signifies a push for greater efficiency in tax administration.',
+    keyPoints: [
+      { label: 'Verification Unit Training', text: 'Officers received training on updated procedures for tax verification.' },
+      { label: 'Focus on Efficiency', text: 'The workshop aimed to enhance the effectiveness of verification processes.' },
+    ],
+    tallyImpact: '',
+    url: 'https://nitter.net/incometaxdelhi/status/2076631141650776413#m',
+    relatedSlug: '',
+  },
 ];
 
 export function getRecentUpdates(limit = 20) {

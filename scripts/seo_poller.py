@@ -202,9 +202,9 @@ def approve_single_update(slug, title, msg_id, entry_id):
         edit_message_text(msg_id, f'ERROR: Could not write update.\n`{result}`')
         return False
 
-    # Commit to develop
-    _run(['git', 'add', 'src/data/updatesData.js'], cwd=str(REPO_ROOT))
-    commit = _git('commit', '-m', f'feat(updates): publish approved update — {result[:60]}')
+    # Commit to develop  (_git already sets cwd — do NOT pass it again)
+    _git('add', 'src/data/updatesData.js')
+    commit = _git('commit', '-m', f'feat(updates): publish approved update - {result[:60]}')
     if commit.returncode != 0:
         print(f'  Commit failed: {commit.stderr}')
         return False
@@ -232,7 +232,9 @@ def approve_single_update(slug, title, msg_id, entry_id):
     edit_message_text(msg_id,
         f'*Published!*\n\n'
         f'*{result[:80]}*\n\n'
-        f'Live at synergyfuturecorp.com/updates in ~2 min.'
+        f'Live: https://synergyfuturecorp.com/updates\n'
+        f'Preview: https://develop.synergy-public-site.pages.dev/updates\n\n'
+        f'Sitemap submitted to Google. Live in ~2 min.'
     )
     remove_pending(slug)
     print(f'  Published: {result}')
