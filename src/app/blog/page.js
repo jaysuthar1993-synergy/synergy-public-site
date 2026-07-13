@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { blogPosts } from '@/data/blogData';
+import { getVisiblePosts } from '@/data/blogData';
 import '../../components/BlogPage.css';
 
 export const metadata = {
@@ -29,7 +29,7 @@ export default function BlogListPage() {
         </div>
 
         <div className="blog-grid">
-          {blogPosts.filter(p => !p.hidden).map((post) => (
+          {getVisiblePosts().map((post) => (
             <Link key={post.slug} href={`/blog/${post.slug}`} className="blog-list-card">
               <span className="blog-list-tag">{post.tag}</span>
               <h2 className="blog-list-title">{post.title}</h2>

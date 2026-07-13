@@ -1,14 +1,12 @@
 import Link from 'next/link';
-import { getBlogPost, blogPosts } from '@/data/blogData';
+import { getBlogPost, blogPosts, getVisiblePosts } from '@/data/blogData';
 import '../../../components/BlogPage.css';
 import ShareBar from '../../../components/ShareBar';
 
 const APP_URL = 'https://app.synergyfuturecorp.com';
 
 export async function generateStaticParams() {
-  return blogPosts
-    .filter(p => !p.hidden)
-    .map(p => ({ slug: p.slug }));
+  return getVisiblePosts().map(p => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({ params }) {
@@ -159,7 +157,7 @@ export default function BlogPostPage({ params }) {
     }))),
   } : null;
 
-  const otherPosts = blogPosts.filter(p => p.slug !== params.slug && !p.hidden).slice(0, 2);
+  const otherPosts = getVisiblePosts().filter(p => p.slug !== params.slug).slice(0, 2);
 
   return (
     <div className="blog-layout">

@@ -923,6 +923,24 @@ def _sanitize_js_quotes(text):
     )
 
 
+def _mark_as_draft(article_js):
+    """
+    Insert `hidden: true` right after the slug line so the article ships as an
+    unapproved draft. Idempotent — will not add it twice.
+    """
+    if re.search(r'''["']?hidden["']?\s*:\s*true''', article_js):
+        return article_js
+
+    # Insert immediately after the slug property, preserving its quote style
+    m = re.search(r'''(["']?slug["']?\s*:\s*["'][^"']+["']\s*,)''', article_js)
+    if not m:
+        print('  WARNING: could not mark article as draft (no slug line found)')
+        return article_js
+
+    insert_at = m.end(1)
+    return article_js[:insert_at] + '\n    hidden: true,' + article_js[insert_at:]
+
+
 def publish_article(article_js, commit=True, push=False):
     """Write article to all files. commit=False skips git (GitHub Actions commits separately)."""
     article_js = _sanitize_js_quotes(article_js)
@@ -941,6 +959,12 @@ def publish_article(article_js, commit=True, push=False):
     if f"slug: '{slug}'" in blog_data or f'"slug": "{slug}"' in blog_data:
         print(f'  SKIP: slug "{slug}" already exists in blogData.js — article not duplicated.')
         return False
+
+    # Mark as an unapproved DRAFT.
+    # hidden:true means the post is not built, not listed, and not in the sitemap
+    # on production — so it cannot go live even if a develop->master merge sweeps
+    # it along. seo_poller.py flips this to false only when you press Approve.
+    article_js = _mark_as_draft(article_js)
 
     # Find the closing ]; of the array (file may have functions after it)
     close_idx = blog_data.rfind('\n];')

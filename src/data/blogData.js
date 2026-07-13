@@ -907,6 +907,7 @@ export const blogPosts = [
 },
   {
   "slug": "streamlining-bank-statement-import-tallyprime-6-0",
+    hidden: true,
   "title": "Bank Statement Import in TallyPrime 6.0: 2026 Guide",
   "tag": "Guide",
   "published": "2026-07-13",
@@ -1004,6 +1005,24 @@ export const blogPosts = [
 }
 ];
 
+/**
+ * Drafts awaiting Telegram approval are stored with `hidden: true`.
+ *
+ * On PRODUCTION they are never built, never listed, never in the sitemap — so
+ * a draft cannot go live even if a develop->master merge sweeps it along.
+ * That makes the approval gate structural rather than a matter of merge timing.
+ *
+ * On the develop PREVIEW deploy, set NEXT_PUBLIC_SHOW_DRAFTS=1 so drafts render
+ * and you can actually review the article before approving it.
+ */
+const SHOW_DRAFTS = process.env.NEXT_PUBLIC_SHOW_DRAFTS === '1';
+
+export function getVisiblePosts() {
+  return SHOW_DRAFTS ? blogPosts : blogPosts.filter(p => !p.hidden);
+}
+
 export function getBlogPost(slug) {
-  return blogPosts.find(p => p.slug === slug) || null;
+  const post = blogPosts.find(p => p.slug === slug) || null;
+  if (post && post.hidden && !SHOW_DRAFTS) return null;
+  return post;
 }

@@ -4,6 +4,8 @@ import { banks } from '@/data/bankData';
 const BASE = 'https://synergyfuturecorp.com';
 
 export default function sitemap() {
+  // Deliberately NOT getVisiblePosts(): unapproved drafts must never reach the
+  // sitemap, not even on the preview deploy. Google must only ever see approved work.
   const blogUrls = blogPosts
     .filter(p => !p.hidden)
     .map(p => ({

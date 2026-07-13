@@ -8,6 +8,7 @@ Checks for Approve/Discard button presses and executes the action.
 """
 
 import os
+import re
 import sys
 import json
 import subprocess
@@ -106,13 +107,67 @@ def verify_live(url, needle=None, timeout=240, interval=15):
     return False, last
 
 
+def unhide_article(slug):
+    """
+    Flip `hidden: true` -> `hidden: false` for this slug in blogData.js.
+
+    Articles are generated as drafts (hidden:true) so they can never go live via
+    an unrelated develop->master merge. Approving is what un-hides them.
+    Returns True if the article was un-hidden (or was already visible).
+    """
+    if not BLOG_DATA.exists():
+        return False, 'blogData.js not found'
+
+    content = BLOG_DATA.read_text(encoding='utf-8')
+
+    # Locate this article's block
+    i = content.find(f"slug: '{slug}'")
+    if i == -1:
+        i = content.find(f'"slug": "{slug}"')
+    if i == -1:
+        return False, f'slug {slug} not found in blogData.js'
+
+    # Only touch the hidden flag inside THIS article (search a bounded window
+    # forward from the slug, not the whole file).
+    window_end = min(len(content), i + 600)
+    window = content[i:window_end]
+
+    new_window, n = re.subn(
+        r'''(["']?hidden["']?\s*:\s*)true''',
+        r'\1false',
+        window,
+        count=1,
+    )
+    if n == 0:
+        # No hidden flag at all -> already visible (e.g. a pre-draft-system article)
+        return True, 'already visible'
+
+    BLOG_DATA.write_text(content[:i] + new_window + content[window_end:], encoding='utf-8')
+    return True, 'un-hidden'
+
+
 def approve_article(slug, title, msg_id):
-    """Merge develop to master → article goes live."""
+    """Un-hide the draft, then merge develop to master so the article goes live."""
     print(f'Approving: {slug}')
 
     # Ensure on develop, pull latest
     _git('checkout', 'develop')
     _git('pull', 'origin', 'develop')
+
+    # Approving is what publishes: flip hidden:true -> false
+    ok, detail = unhide_article(slug)
+    if not ok:
+        print(f'  Un-hide failed: {detail}')
+        edit_message_text(msg_id, f'ERROR: Could not un-hide the draft.\n`{detail}`')
+        return False
+    print(f'  Draft {detail}')
+
+    if detail == 'un-hidden':
+        _git('add', 'src/data/blogData.js')
+        c = _git('commit', '-m', f'feat(blog): publish approved article {slug}')
+        if c.returncode != 0:
+            print(f'  Commit warning: {c.stderr.strip()[:120]}')
+        _git('push', 'origin', 'develop')
 
     # Merge to master
     _git('checkout', 'master')
