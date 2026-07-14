@@ -43,6 +43,25 @@ def _git(*args):
     return _run(['git'] + list(args))
 
 
+def _checkout(branch):
+    """
+    Switch branches, failing LOUDLY instead of silently.
+
+    `git checkout` aborts if a tracked file has local changes. That is exactly
+    what silently killed approvals: seo_updates_pending.json had been committed,
+    the poller mutated it while approving, and the checkout to master then
+    refused - so the merge never ran and the update never went live, with no
+    error surfaced anywhere. The state files are gitignored now; this guard
+    makes any future recurrence visible rather than silent.
+    """
+    r = _git('checkout', branch)
+    if r.returncode != 0:
+        err = (r.stderr or '').strip()
+        print(f'  ERROR: could not checkout {branch}: {err[:200]}')
+        return False, err
+    return True, ''
+
+
 def _ping_sitemap():
     """Submit sitemap to Google Search Console after every master deploy."""
     try:
@@ -322,7 +341,10 @@ def approve_single_update(slug, title, msg_id, entry_id):
     sys.path.insert(0, str(REPO_ROOT / 'scripts'))
     from seo_news_monitor import write_pending_update_to_file
 
-    _git('checkout', 'develop')
+    ok, err = _checkout('develop')
+    if not ok:
+        edit_message_text(msg_id, f'ERROR: could not switch to develop.\n`{err[:180]}`')
+        return False
     _git('pull', 'origin', 'develop')
 
     ok, result = write_pending_update_to_file(entry_id)
@@ -341,16 +363,21 @@ def approve_single_update(slug, title, msg_id, entry_id):
     _git('push', 'origin', 'develop')
 
     # Merge to master
-    _git('checkout', 'master')
+    ok, err = _checkout('master')
+    if not ok:
+        edit_message_text(msg_id, f'ERROR: could not switch to master.\n`{err[:180]}`')
+        return False
+
     _git('pull', 'origin', 'master')
     merge = _git('merge', 'develop', '--no-edit')
     if merge.returncode != 0:
         print(f'  Merge failed: {merge.stderr}')
         edit_message_text(msg_id, f'ERROR: Merge to master failed.\n```{merge.stderr[:200]}```')
+        _checkout('develop')
         return False
 
     push = _git('push', 'origin', 'master')
-    _git('checkout', 'develop')
+    _checkout('develop')
 
     if push.returncode != 0:
         print(f'  Push failed: {push.stderr}')

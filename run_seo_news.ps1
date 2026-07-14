@@ -75,16 +75,15 @@ if ($dry) {
     exit 0
 }
 
-# Commit the seen tracker + pending store so state survives across runs.
-# updatesData.js is NOT committed here - seo_poller.py writes each entry
+# NOTE: Do NOT git-add the seen tracker or the pending store.
+# They are LOCAL RUNTIME STATE and are gitignored on purpose.
+#
+# Tracking them is actively harmful: the poller mutates seo_updates_pending.json
+# while approving, and a tracked copy makes `git checkout master` abort with
+# "local changes would be overwritten" - which silently killed every approval.
+#
+# updatesData.js is not committed here either. seo_poller.py writes each entry
 # only after you press Approve in Telegram.
-$today = Get-Date -Format "yyyy-MM-dd"
-git add scripts/seo_news_seen.json scripts/seo_updates_pending.json 2>$null
-git diff --cached --quiet
-if ($LASTEXITCODE -ne 0) {
-    git commit -m "chore(seo): update seen tracker ($today)"
-    git push origin develop
-}
 
 Write-Host ""
 Write-Host "OK $count update(s) queued - Telegram approval sent for each." -ForegroundColor Cyan

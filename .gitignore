@@ -33,3 +33,14 @@ __pycache__/
 venv/
 env/
 .venv
+
+# SEO pipeline runtime state — MUST stay untracked.
+# The poller mutates these mid-run; if git tracks them, `git checkout master`
+# aborts with "local changes would be overwritten" and the approval dies silently.
+scripts/seo_updates_pending.json
+scripts/seo_pending.json
+scripts/seo_tg_offset.txt
+scripts/seo_news_seen.json
+scripts/seo_news_seen.json.bak
+.seo_news_last_count
+.seo_last_slug
