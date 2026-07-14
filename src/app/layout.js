@@ -41,7 +41,11 @@ const softwareAppSchema = {
   description:
     'Upload Excel bank statement, review entries, post directly to Tally Prime or Tally ERP 9. No XML export needed. Free for chartered accountants and businesses in India.',
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR', availability: 'https://schema.org/InStock' },
-  aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.8', ratingCount: '50' },
+  // NO aggregateRating here. It previously claimed 4.8 stars from 50 ratings, but
+  // no reviews exist anywhere on this site. Review markup not backed by real,
+  // visible, user-submitted reviews is spam under Google's structured-data policy
+  // — and this was on EVERY page, so the blast radius was the whole domain.
+  // Only add it back alongside a real rendered testimonials section, with true numbers.
   provider: { '@type': 'Organization', name: 'Synergy Future Corp', url: 'https://synergyfuturecorp.com' },
   featureList: [
     'Direct Tally posting — no XML file needed',
@@ -74,7 +78,10 @@ const orgSchema = {
     'Synergy Future Corp builds free accounting automation tools for Indian chartered accountants and businesses.',
 };
 
-const howToSchema = {
+// EXPORTED, not emitted here. The homepage (src/app/page.js) renders it.
+// Emitting a HowTo about importing bank statements from the ROOT LAYOUT put it on
+// every page — including /privacy-policy and /updates, where it is simply false.
+export const howToSchema = {
   '@context': 'https://schema.org',
   '@type': 'HowTo',
   name: 'How to import Excel bank statement directly into Tally',
@@ -107,7 +114,12 @@ const howToSchema = {
   ],
 };
 
-const faqSchema = {
+// EXPORTED, not emitted here. The homepage (src/app/page.js) renders it.
+// From the layout this shipped a SECOND FAQPage onto every blog and bank page
+// (Google allows one per page), and put 9 questions on pages that don't ask them.
+// The Q&A below must stay in sync with the `faqs` array in LandingPage.jsx —
+// Google requires marked-up Q&A to actually be present on the page.
+export const faqSchema = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
   mainEntity: [
@@ -198,6 +210,9 @@ export default function RootLayout({ children }) {
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        {/* SITE-WIDE schema only: these describe the company and the product, so
+            they are true on every page. Page-level schema (HowTo, FAQPage) is
+            emitted by the page it belongs to — see src/app/page.js. */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppSchema) }}
@@ -205,14 +220,6 @@ export default function RootLayout({ children }) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
         />
       </head>
       <body>
