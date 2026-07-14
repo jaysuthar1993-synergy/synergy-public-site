@@ -1002,6 +1002,103 @@ export const blogPosts = [
       ]
     }
   ]
+},
+  {
+  "slug": "tally-prime-bank-reconciliation-step-by-step-excel-upload",
+    hidden: true,
+  "title": "TallyPrime Bank Reconciliation: Excel Upload 2026",
+  "tag": "Guide",
+  "published": "2026-07-14",
+  "updated": "2026-07-14",
+  "description": "Master TallyPrime 6.0 bank reconciliation using Excel. Synergy Automation posts directly, saving you hours. Free for Indian CAs.",
+  "keywords": "tally prime bank reconciliation, bank reconciliation tally, excel bank statement tally, synergy automation tally, tallyprime 6.0",
+  "content": [
+    {
+      "type": "intro",
+      "text": "Manually entering bank statement entries into TallyPrime 6.0 drains your valuable hours. You face repetitive data entry. This delays your bank reconciliation process significantly. Synergy Automation solves this entire pain point. It directly posts Excel bank statements to TallyPrime 6.0 and Tally ERP 9. No XML files are needed. It is completely FREE for Indian CAs."
+    },
+    {
+      "type": "h2",
+      "text": "What is TallyPrime Bank Reconciliation?"
+    },
+    {
+      "type": "p",
+      "text": "Bank reconciliation in TallyPrime 6.0 compares your Tally records with your bank's statement. It identifies discrepancies. These can be due to timing differences or errors. The goal is to ensure both balances match. This process is critical for accurate financial reporting. It confirms your cash and bank balances are correct by March 31st each year."
+    },
+    {
+      "type": "h2",
+      "text": "How to Reconcile Bank Statements in TallyPrime 6.0 — Step by Step"
+    },
+    {
+      "type": "steps",
+      "items": [
+        "Step 1: Prepare your bank statement. Ensure it is in Excel (.xls or .xlsx) format. Clean up any unnecessary columns.",
+        "Step 2: Navigate to Bank Reconciliation. Go to Gateway of Tally > Banking > Bank Reconciliation.",
+        "Step 3: Select your bank ledger. Choose the specific bank account you need to reconcile.",
+        "Step 4: Initiate reconciliation. TallyPrime 6.0 will display transactions from your books. You'll see bank transactions below.",
+        "Step 5: Match transactions. Manually enter the bank date for each matching entry. Tally helps identify potential matches by amount.",
+        "Step 6: Review unreconciled items. Investigate any transactions not matched automatically. Ensure all entries are accounted for before year-end closing."
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "Mistakes That Cost Indian CAs Hours"
+    },
+    {
+      "type": "list",
+      "items": [
+        "Mistake: Manual data entry from Excel. Fix: Use automation to import directly.",
+        "Mistake: Incorrectly formatted Excel files. Fix: Standardize your Excel export from the bank.",
+        "Mistake: Missing bank charges or interest entries. Fix: Ensure these appear in your bank statement import.",
+        "Mistake: Reconciling without checking the bank date. Fix: Always verify the bank date for accurate matching."
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "How Synergy Automation Handles This"
+    },
+    {
+      "type": "p",
+      "text": "Synergy Automation directly addresses the manual entry step. You simply upload your Excel bank statement. Our system intelligently reads the data. It then posts these transactions directly into TallyPrime 6.0 or Tally ERP 9. This eliminates manual entry and XML file conversion. It is a completely FREE tool for Indian CAs, saving you hours every week."
+    },
+    {
+      "type": "infographic",
+      "variant": "steps",
+      "title": "Synergy Automation: Excel to Tally Process",
+      "items": [
+        "Upload Excel Bank Statement",
+        "Synergy Reads Data",
+        "Direct Posting to Tally",
+        "Review in TallyPrime 6.0",
+        "Reconciliation Complete"
+      ]
+    },
+    {
+      "type": "faq",
+      "items": [
+        {
+          "q": "How can I perform bank reconciliation in TallyPrime 6.0 with an Excel statement?",
+          "a": "You can manually enter data from your Excel statement into TallyPrime 6.0. Alternatively, Synergy Automation directly posts your Excel bank statement to TallyPrime 6.0 and Tally ERP 9, saving significant time."
+        },
+        {
+          "q": "Can Synergy Automation help with TallyPrime 6.0 bank reconciliation?",
+          "a": "Yes. Synergy Automation is a FREE tool that lets Indian CAs post Excel bank statements directly to TallyPrime 6.0 and Tally ERP 9. It bypasses manual entry and XML files entirely."
+        },
+        {
+          "q": "Is bank reconciliation different in Tally ERP 9 versus TallyPrime 6.0?",
+          "a": "The core process is similar. Synergy Automation supports direct posting to both TallyPrime 6.0 and Tally ERP 9, ensuring a consistent experience across versions."
+        },
+        {
+          "q": "What is a common mistake in Tally bank reconciliation?",
+          "a": "A common mistake is relying solely on the instrument date instead of the bank date. Always verify and use the bank date for accurate reconciliation in TallyPrime 6.0."
+        },
+        {
+          "q": "How much time can Synergy Automation save on bank reconciliation?",
+          "a": "Manual reconciliation can take 3 hours or more per bank. Synergy Automation reduces this to about 8 minutes for import and review. This is a substantial time saving for your practice."
+        }
+      ]
+    }
+  ]
 }
 ];
 
