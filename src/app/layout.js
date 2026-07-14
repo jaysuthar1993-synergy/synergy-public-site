@@ -1,11 +1,26 @@
 import Script from 'next/script';
+import { Inter } from 'next/font/google';
 import './globals.css';
+
+// Self-hosted at build time. This was a raw <link rel="stylesheet"> to
+// fonts.googleapis.com in <head> — a render-blocking round-trip on the critical
+// path, which is a real LCP hit on Indian 4G. next/font inlines the CSS and
+// serves the font from our own origin, so the external request disappears
+// entirely (and it also removes a third-party dependency from page load).
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-inter',
+});
 
 export const metadata = {
   metadataBase: new URL('https://synergyfuturecorp.com'),
   title: {
     default: 'Excel Bank Statement to Tally | Free Direct Posting | Synergy Automation',
-    template: '%s | Synergy Automation',
+    // Short suffix on purpose: '%s | Synergy Automation' added 22 chars to every
+    // page title and pushed several past 85, where Google truncates them in the SERP.
+    template: '%s | Synergy',
   },
   description:
     'Upload Excel bank statement, review entries, post directly to Tally Prime or ERP 9. No XML export, no manual import. Free for Indian chartered accountants and businesses.',
@@ -200,16 +215,12 @@ export const faqSchema = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <head>
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="apple-touch-icon" href="/og-image.png" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
+        {/* No fonts.googleapis.com <link> here — next/font self-hosts Inter at
+            build time, so the render-blocking third-party request is gone. */}
         {/* SITE-WIDE schema only: these describe the company and the product, so
             they are true on every page. Page-level schema (HowTo, FAQPage) is
             emitted by the page it belongs to — see src/app/page.js. */}

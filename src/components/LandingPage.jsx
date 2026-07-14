@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { banks } from '../data/bankData';
 import './LandingPage.css';
 
 const APP_URL = 'https://app.synergyfuturecorp.com';
@@ -12,16 +13,11 @@ const BANKS = [
   'Union Bank', 'IndusInd Bank'
 ];
 
-const BANK_GUIDES = [
-  { slug: 'hdfc', name: 'HDFC Bank' },
-  { slug: 'sbi', name: 'SBI' },
-  { slug: 'icici', name: 'ICICI Bank' },
-  { slug: 'axis', name: 'Axis Bank' },
-  { slug: 'kotak', name: 'Kotak Bank' },
-  { slug: 'pnb', name: 'PNB' },
-  { slug: 'bank-of-baroda', name: 'Bank of Baroda' },
-  { slug: 'yes-bank', name: 'Yes Bank' },
-];
+// Derived from bankData, never hardcoded. This list used to be a hand-written
+// array of 8 while BANKS above advertised 12 — so IDFC First, Canara, Union and
+// IndusInd were named on the page but had no guide and no link. Deriving it means
+// adding a bank to bankData.js automatically links it from the homepage.
+const BANK_GUIDES = banks.map(b => ({ slug: b.slug, name: b.name }));
 
 const COMPARISON = [
   { feature: 'Direct Tally posting (no XML)', xmlTools: false, paidPlatforms: true, synergy: true },

@@ -866,6 +866,50 @@ def show_preview(topic, article_js, videos):
 # ─────────────────────────────────────────────
 # STEP 5 — PUBLISH
 # ─────────────────────────────────────────────
+def check_topic_duplicate(topic):
+    """
+    Refuse topics that duplicate an article we already published.
+
+    This is the guard that was missing. The pipeline picked trending YouTube
+    topics with NO check against existing content, so it kept regenerating the
+    same subject — we ended up with four articles all targeting
+    "bank statement to Tally", competing against each other in Google and
+    splitting ranking signals instead of accumulating them.
+
+    Returns (is_duplicate: bool, reason: str).
+    """
+    if not BLOG_DATA_FILE.exists():
+        return False, ''
+
+    blog = BLOG_DATA_FILE.read_text(encoding='utf-8')
+    existing = re.findall(r'["\']?title["\']?\s*:\s*["\']([^"\']+)["\']', blog)
+    existing = [t for t in existing if t.strip()]
+    if not existing:
+        return False, ''
+
+    listing = '\n'.join(f'- {t}' for t in existing)
+    prompt = (
+        f'We already published these articles:\n{listing}\n\n'
+        f'Proposed new topic: "{topic}"\n\n'
+        'Would an article on this proposed topic substantially OVERLAP any existing '
+        'article above — i.e. target the same search intent and compete with it in '
+        'Google (keyword cannibalization)?\n\n'
+        'Say DUPLICATE if it covers the same core task (e.g. another "get a bank '
+        'statement into Tally" article when one already exists).\n'
+        'Say UNIQUE only if it targets a genuinely different search intent.\n\n'
+        'Reply with exactly one line: DUPLICATE or UNIQUE, then a colon and a brief reason.'
+    )
+
+    result = _call_gemini(prompt, max_tokens=80, temperature=0.0)
+    if not result:
+        return False, 'duplicate check unavailable'
+
+    line = result.strip().splitlines()[0]
+    is_dup = line.upper().startswith('DUPLICATE')
+    reason = line.split(':', 1)[-1].strip() if ':' in line else line
+    return is_dup, reason
+
+
 def check_topic_relevance(topic):
     """
     Ask Gemini: is this topic genuinely about Tally accounting workflows?
@@ -1205,6 +1249,26 @@ def main():
             print('  Trying queue fallback...')
             topic = get_next_topic_from_queue()
             print(f'  Queue topic: "{topic}"')
+
+        # Guard against keyword cannibalization: refuse a topic that duplicates
+        # something already published. Without this, the pipeline kept picking the
+        # same trending subject and we ended up with FOUR articles all fighting
+        # each other for "bank statement to Tally".
+        is_dup, dup_reason = check_topic_duplicate(topic)
+        if is_dup:
+            print(f'  SKIP (duplicates existing article): {dup_reason}')
+            mark_topic_done(topic)
+            print('  Trying queue fallback...')
+            topic = get_next_topic_from_queue()
+            print(f'  Queue topic: "{topic}"')
+
+            # Check the fallback too — the queue can also hold a covered topic
+            is_dup2, dup_reason2 = check_topic_duplicate(topic)
+            if is_dup2:
+                print(f'  Queue topic ALSO duplicates existing content: {dup_reason2}')
+                print('  Nothing new to write today. Exiting cleanly.')
+                mark_topic_done(topic)
+                return
 
         print(f'Topic: "{topic}"')
         success = run_pipeline(topic, provider=provider, auto=auto, push=push)

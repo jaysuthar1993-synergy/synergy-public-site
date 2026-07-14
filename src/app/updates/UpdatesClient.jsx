@@ -93,53 +93,57 @@ function GovtUpdateCard({ update }) {
             {update.summary}
           </p>
 
-          {/* Expanded content */}
-          {expanded && (
-            <div>
-              {/* Key points infographic */}
-              <KeyPointsInfographic keyPoints={update.keyPoints} />
+          {/* Expanded content.
+              ALWAYS rendered into the HTML, hidden with CSS — never `{expanded && ...}`.
+              With the conditional, keyPoints and tallyImpact (the genuinely unique,
+              high-value content: "Gateway → Statutory Reports → GSTR-3B, post a
+              reversal journal…") shipped in ZERO pages. Google never saw the best
+              thing on this site, and the "Full guide" internal links didn't exist
+              in the HTML either. Same UX, but now it's crawlable. */}
+          <div hidden={!expanded}>
+            {/* Key points infographic */}
+            <KeyPointsInfographic keyPoints={update.keyPoints} />
 
-              {/* Tally impact */}
-              {update.tallyImpact && !/^no (direct|specific)/i.test(update.tallyImpact.trim()) && (
-                <div style={{
-                  background: '#f0f9ff',
-                  border: '1px solid #bae6fd',
-                  borderRadius: 8,
-                  padding: '11px 14px',
-                  fontSize: 13,
-                  color: '#0369a1',
-                  margin: '14px 0',
-                  lineHeight: 1.55,
-                }}>
-                  <strong>Step-by-step in Tally:</strong> {update.tallyImpact}
-                </div>
-              )}
-
-              {/* Links row */}
-              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 12 }}>
-                {update.relatedSlug && (
-                  <Link href={`/blog/${update.relatedSlug}`} style={{
-                    fontSize: 13,
-                    color: '#4F46E5',
-                    textDecoration: 'none',
-                    fontWeight: 600,
-                  }}>
-                    Full guide →
-                  </Link>
-                )}
-                {update.url && (
-                  <a
-                    href={update.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ fontSize: 13, color: '#64748b', textDecoration: 'none' }}
-                  >
-                    Official source →
-                  </a>
-                )}
+            {/* Tally impact */}
+            {update.tallyImpact && !/^no (direct|specific)/i.test(update.tallyImpact.trim()) && (
+              <div style={{
+                background: '#f0f9ff',
+                border: '1px solid #bae6fd',
+                borderRadius: 8,
+                padding: '11px 14px',
+                fontSize: 13,
+                color: '#0369a1',
+                margin: '14px 0',
+                lineHeight: 1.55,
+              }}>
+                <strong>Step-by-step in Tally:</strong> {update.tallyImpact}
               </div>
+            )}
+
+            {/* Links row */}
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 12 }}>
+              {update.relatedSlug && (
+                <Link href={`/blog/${update.relatedSlug}`} style={{
+                  fontSize: 13,
+                  color: '#4F46E5',
+                  textDecoration: 'none',
+                  fontWeight: 600,
+                }}>
+                  Full guide →
+                </Link>
+              )}
+              {update.url && (
+                <a
+                  href={update.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: 13, color: '#64748b', textDecoration: 'none' }}
+                >
+                  Official source →
+                </a>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Footer row: expand toggle + share, both always visible so a
               reader can share straight from the collapsed card. */}
@@ -182,8 +186,11 @@ function GovtUpdateCard({ update }) {
 export default function UpdatesClient() {
   const [showAll, setShowAll] = useState(false);
   const INITIAL = 10;
-  const govtUpdates = showAll ? ALL_UPDATES : ALL_UPDATES.slice(0, INITIAL);
-  const hasMore = !showAll && ALL_UPDATES.length > INITIAL;
+
+  // Render EVERY update into the HTML; hide the overflow with CSS.
+  // Slicing the array meant 5 of 15 updates were never in the page at all, so
+  // Google simply never saw them. "Show all" is now a reveal, not a mount gate.
+  const hasMore = ALL_UPDATES.length > INITIAL;
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
@@ -214,8 +221,14 @@ export default function UpdatesClient() {
           </div>
         ) : (
           <>
-            {govtUpdates.map(u => <GovtUpdateCard key={u.id} update={u} />)}
-            {hasMore && (
+            {/* Every update is rendered; the ones past INITIAL are hidden with CSS
+                until "Show all" is clicked. They stay in the HTML so Google sees them. */}
+            {ALL_UPDATES.map((u, i) => (
+              <div key={u.id} hidden={!showAll && i >= INITIAL}>
+                <GovtUpdateCard update={u} />
+              </div>
+            ))}
+            {hasMore && !showAll && (
               <div style={{ textAlign: 'center', marginTop: 8, marginBottom: 8 }}>
                 <button
                   onClick={() => setShowAll(true)}

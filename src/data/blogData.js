@@ -2,7 +2,7 @@ export const blogPosts = [
   {
     slug: 'excel-to-tally-complete-guide',
     related: ['direct-posting-vs-xml-import', 'bank-reconciliation-tally-prime-excel', 'excel-bank-statement-to-tallyprime-6-0'],
-    title: 'Excel to Tally: The Complete Guide for Indian Accountants (2026)',
+    title: 'Excel to Tally: Complete Guide for Indian CAs (2026)',
     tag: 'Guide',
     published: '2026-06-14',
     updated: '2026-06-14',
@@ -188,7 +188,7 @@ export const blogPosts = [
   {
     slug: 'direct-posting-vs-xml-import',
     related: ['excel-to-tally-complete-guide', 'excel-bank-statement-to-tallyprime-6-0'],
-    title: 'Direct Tally Posting vs XML File Import: What\'s the Difference?',
+    title: 'Direct Tally Posting vs XML Import: The Difference',
     tag: 'Explainer',
     published: '2026-06-14',
     updated: '2026-06-14',

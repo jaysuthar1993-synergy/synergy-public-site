@@ -20,7 +20,7 @@
   --lp-text-4:         #94A3B8;
   --lp-border:         #E2E8F0;
   --lp-border-2:       #CBD5E1;
-  --lp-font:           'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --lp-font: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --lp-r:              8px;
   --lp-r-lg:           12px;
   --lp-r-xl:           16px;

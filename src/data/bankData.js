@@ -166,6 +166,94 @@ export const banks = [
       { narrationKeyword: 'NACH', suggestedLedger: 'EMI / Auto-debit Ledger' },
       { narrationKeyword: 'INT', suggestedLedger: 'Bank Interest Received' }
     ]
+  },
+  {
+    slug: 'idfc-first',
+    name: 'IDFC First Bank',
+    fullName: 'IDFC FIRST Bank Limited',
+    keyword: 'IDFC First bank statement to Tally',
+    description: 'Import IDFC First Bank Excel statement directly to Tally Prime or ERP 9 using Synergy Automation. No XML file needed.',
+    excelFormat: 'IDFC First net banking exports .xlsx statements. Columns: Transaction Date, Value Date, Particulars, Cheque/Ref No, Debit, Credit, Balance.',
+    downloadPath: 'Net Banking / IDFC FIRST Mobile app - Accounts - Statement - Download as Excel',
+    notes: [
+      'IDFC First uses "Particulars" as the narration column - Synergy detects this automatically',
+      'UPI narrations carry the full VPA (e.g. name@okhdfcbank) - shorten in the review table before posting if you prefer cleaner ledgers',
+      'Interest credits post monthly on savings accounts - assign to Bank Interest Received',
+      'IDFC First shows separate rows for GST on bank charges - assign those to Input GST, not Bank Charges'
+    ],
+    commonLedgers: [
+      { narrationKeyword: 'UPI', suggestedLedger: 'Assign to the specific party or UPI Expenses' },
+      { narrationKeyword: 'NEFT/IMPS', suggestedLedger: 'Party ledger named in the narration' },
+      { narrationKeyword: 'INT PD', suggestedLedger: 'Bank Interest Received' },
+      { narrationKeyword: 'CHRG/FEE', suggestedLedger: 'Bank Charges' },
+      { narrationKeyword: 'GST', suggestedLedger: 'Input GST (not Bank Charges)' }
+    ]
+  },
+  {
+    slug: 'canara',
+    name: 'Canara Bank',
+    fullName: 'Canara Bank',
+    keyword: 'Canara Bank statement to Tally',
+    description: 'Import Canara Bank Excel statement directly to Tally Prime or ERP 9 using Synergy Automation. Step-by-step guide for Indian accountants.',
+    excelFormat: 'Canara Bank net banking exports .xls/.xlsx. Columns: Txn Date, Value Date, Description, Cheque No, Debit, Credit, Balance.',
+    downloadPath: 'Canara ai1 / Net Banking - Account Statement - select date range - Download Excel',
+    notes: [
+      'Canara statements often include 3-4 header rows above the actual table - Synergy skips these automatically',
+      'Older Canara exports come as .xls (not .xlsx) - both are supported',
+      'Narrations abbreviate heavily (e.g. "BY TRANSFER-NEFT") - review before assigning ledgers',
+      'Branch-issued statements arrive as PDF - download the Excel version from net banking instead'
+    ],
+    commonLedgers: [
+      { narrationKeyword: 'BY TRANSFER', suggestedLedger: 'Party ledger named in the narration' },
+      { narrationKeyword: 'NEFT/RTGS', suggestedLedger: 'Assign to the party in the narration' },
+      { narrationKeyword: 'INT CR', suggestedLedger: 'Bank Interest Received' },
+      { narrationKeyword: 'SERVICE CHARGE', suggestedLedger: 'Bank Charges' },
+      { narrationKeyword: 'ATM', suggestedLedger: 'Cash Account' }
+    ]
+  },
+  {
+    slug: 'union-bank',
+    name: 'Union Bank',
+    fullName: 'Union Bank of India',
+    keyword: 'Union Bank statement to Tally',
+    description: 'Import Union Bank of India Excel statement directly to Tally Prime or ERP 9 using Synergy Automation. No manual entry.',
+    excelFormat: 'Union Bank net banking exports .xlsx. Columns: Date, Transaction Id, Remarks, Withdrawal, Deposit, Balance.',
+    downloadPath: 'Union Bank Net Banking - Account - Statement of Account - Download Excel',
+    notes: [
+      'Union Bank labels the amount columns "Withdrawal" and "Deposit" (not Debit/Credit) - Synergy maps these automatically',
+      'The "Remarks" column is the narration',
+      'Union Bank merged with Andhra Bank and Corporation Bank - older accounts may still export the legacy format',
+      'Quarterly interest credits appear as "INT CREDIT" - assign to Bank Interest Received'
+    ],
+    commonLedgers: [
+      { narrationKeyword: 'UPI', suggestedLedger: 'Assign to the specific party or UPI Expenses' },
+      { narrationKeyword: 'NEFT', suggestedLedger: 'Party ledger named in the remarks' },
+      { narrationKeyword: 'INT CREDIT', suggestedLedger: 'Bank Interest Received' },
+      { narrationKeyword: 'SMS CHRG', suggestedLedger: 'Bank Charges' },
+      { narrationKeyword: 'ATM WDL', suggestedLedger: 'Cash Account' }
+    ]
+  },
+  {
+    slug: 'indusind',
+    name: 'IndusInd Bank',
+    fullName: 'IndusInd Bank Limited',
+    keyword: 'IndusInd bank statement to Tally',
+    description: 'Import IndusInd Bank Excel statement directly to Tally Prime or ERP 9 using Synergy Automation. Free, no XML export.',
+    excelFormat: 'IndusInd net banking exports .xlsx. Columns: Date, Particulars, Chq/Ref No, Withdrawal Amt, Deposit Amt, Balance.',
+    downloadPath: 'IndusInd Net Banking - Accounts - Account Statement - Export to Excel',
+    notes: [
+      'IndusInd uses "Withdrawal Amt" / "Deposit Amt" instead of Debit/Credit - handled automatically',
+      'Narrations include the full IMPS/UPI reference string - trim in the review table for cleaner ledgers',
+      'Current account holders see frequent "CMS" entries (cash management) - assign to the collecting party',
+      'IndusInd charges appear with a separate GST line - assign that line to Input GST'
+    ],
+    commonLedgers: [
+      { narrationKeyword: 'UPI', suggestedLedger: 'Assign to the specific party or UPI Expenses' },
+      { narrationKeyword: 'IMPS/NEFT', suggestedLedger: 'Party ledger named in the narration' },
+      { narrationKeyword: 'CMS', suggestedLedger: 'Assign to the collecting party' },
+      { narrationKeyword: 'INT', suggestedLedger: 'Bank Interest Received' },
+      { narrationKeyword: 'CHGS', suggestedLedger: 'Bank Charges' }
+    ]
   }
 ];
 
