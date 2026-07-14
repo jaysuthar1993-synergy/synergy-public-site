@@ -2,13 +2,28 @@ import Link from 'next/link';
 import { getVisiblePosts } from '@/data/blogData';
 import '../../components/BlogPage.css';
 
+const DESC = 'Guides, how-tos, and tips for Indian accountants using Tally. Learn how to import bank statements, avoid entry errors, and automate reconciliation.';
+
 export const metadata = {
   title: 'Tally Automation Knowledge Hub',
-  description: 'Guides, how-tos, and tips for Indian accountants using Tally. Learn how to import bank statements, avoid entry errors, and automate reconciliation.',
+  description: DESC,
   alternates: { canonical: 'https://synergyfuturecorp.com/blog' },
+  // `images` must be explicit: Next.js shallow-merges metadata, so declaring
+  // openGraph here replaces the root's object and silently drops og:image.
   openGraph: {
+    type: 'website',
     title: 'Tally Automation Knowledge Hub | Synergy Automation',
+    description: DESC,
     url: 'https://synergyfuturecorp.com/blog',
+    siteName: 'Synergy Automation',
+    locale: 'en_IN',
+    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Tally Automation Knowledge Hub',
+    description: DESC,
+    images: ['/og-image.png'],
   },
 };
 

@@ -62,6 +62,32 @@ def _checkout(branch):
     return True, ''
 
 
+def _seo_preflight():
+    """
+    Build and run the SEO guardrails BEFORE merging to master.
+
+    Every check in seo_preflight.py maps to a bug that actually shipped and sat on
+    production unnoticed — fake review markup, FAQ schema promising answers that
+    weren't in the HTML, orphan pages, drafts leaking into the sitemap. `npm run
+    build` was green for all of them. This is the gate that isn't.
+
+    Returns (ok: bool, detail: str). On failure the caller must NOT merge.
+    """
+    build = _run(['npm', 'run', 'build'], shell=True)
+    if build.returncode != 0:
+        tail = (build.stderr or build.stdout or '')[-300:]
+        return False, f'build failed: {tail}'
+
+    check = _run([sys.executable, str(REPO_ROOT / 'scripts' / 'seo_preflight.py')])
+    if check.returncode != 0:
+        out = (check.stdout or '')
+        # Surface just the failure lines, not the whole report
+        bad = [l.strip() for l in out.splitlines() if l.strip().startswith('X [')]
+        return False, '; '.join(bad[:3]) or 'preflight failed'
+
+    return True, 'preflight passed'
+
+
 def _ping_sitemap():
     """Submit sitemap to Google Search Console after every master deploy."""
     try:
@@ -180,6 +206,21 @@ def approve_article(slug, title, msg_id):
         edit_message_text(msg_id, f'ERROR: Could not un-hide the draft.\n`{detail}`')
         return False
     print(f'  Draft {detail}')
+
+    # GATE: never merge to master if the SEO guardrails fail.
+    ok, why = _seo_preflight()
+    if not ok:
+        print(f'  SEO preflight FAILED: {why}')
+        _git('checkout', '--', 'src/data/blogData.js')  # undo the un-hide
+        edit_message_text(msg_id,
+            f'*BLOCKED - not published*\n\n'
+            f'*{title}*\n\n'
+            f'The SEO preflight failed, so nothing was merged to master:\n'
+            f'`{why[:250]}`\n\n'
+            f'Fix the issue, then approve again.'
+        )
+        return False
+    print('  SEO preflight passed.')
 
     if detail == 'un-hidden':
         _git('add', 'src/data/blogData.js')

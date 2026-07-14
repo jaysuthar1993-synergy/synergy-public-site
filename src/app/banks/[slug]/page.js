@@ -11,14 +11,40 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }) {
   const bank = getBank(params.slug);
   if (!bank) return { title: 'Bank Not Found' };
+
+  // bank.name already ends in "Bank" for most banks ("HDFC Bank", "Axis Bank"),
+  // so `${bank.name} Bank Statement` produced "HDFC Bank Bank Statement to Tally"
+  // on 5 of 8 pages. Strip the trailing "Bank" before appending.
+  const shortName = bank.name.replace(/\s+Bank$/i, '');
+
+  // Short title: the layout template appends " | Synergy Automation" (22 chars),
+  // which was pushing titles past 80 characters and truncating them in SERPs.
+  const title = `${shortName} Bank Statement to Tally | Free Direct Post`;
+  const url = `https://synergyfuturecorp.com/banks/${bank.slug}`;
+
   return {
-    title: `${bank.name} Bank Statement to Tally | Direct Post Free`,
+    title,
     description: bank.description,
     keywords: `${bank.keyword}, ${bank.name} excel to tally, ${bank.name} tally import`,
-    alternates: { canonical: `https://synergyfuturecorp.com/banks/${bank.slug}` },
+    alternates: { canonical: url },
+    // NOTE: Next.js SHALLOW-merges metadata — defining `openGraph` here REPLACES
+    // the root's openGraph object wholesale, so omitting `images` silently dropped
+    // og:image from every bank page. Same for `twitter`: not overriding it meant
+    // every bank page shipped the HOMEPAGE's Twitter card. Both must be explicit.
     openGraph: {
-      title: `${bank.name} Bank Statement to Tally | Synergy Automation`,
-      url: `https://synergyfuturecorp.com/banks/${bank.slug}`,
+      type: 'article',
+      title: `${shortName} Bank Statement to Tally | Synergy Automation`,
+      description: bank.description,
+      url,
+      siteName: 'Synergy Automation',
+      locale: 'en_IN',
+      images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${shortName} Bank Statement to Tally — Free`,
+      description: bank.description,
+      images: ['/og-image.png'],
     },
   };
 }
@@ -39,6 +65,19 @@ export default function BankPage({ params }) {
       </div>
     );
   }
+
+  // Breadcrumbs replace the raw URL line in the SERP with
+  // "synergyfuturecorp.com > Bank Guides > HDFC Bank" and reinforce the
+  // hub/spoke structure to the crawler. There was none anywhere on the site.
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://synergyfuturecorp.com' },
+      { '@type': 'ListItem', position: 2, name: 'Bank Guides', item: 'https://synergyfuturecorp.com/blog' },
+      { '@type': 'ListItem', position: 3, name: `${bank.name} to Tally` },
+    ],
+  };
 
   const pageSchema = {
     '@context': 'https://schema.org',
@@ -87,6 +126,10 @@ export default function BankPage({ params }) {
     <div className="blog-layout">
       <script
         type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <script
+        type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(pageSchema) }}
       />
       <script
@@ -102,7 +145,7 @@ export default function BankPage({ params }) {
       <div className="blog-post-container">
         <div className="blog-post-header">
           <span className="blog-list-tag">Bank Guide</span>
-          <h1 className="blog-post-title">{bank.name} Bank Statement to Tally: Direct Import Guide</h1>
+          <h1 className="blog-post-title">{bank.name.replace(/\s+Bank$/i, '')} Bank Statement to Tally: Direct Import Guide</h1>
           <p className="blog-post-meta">Free · Works with Tally Prime and Tally ERP 9 · No XML needed</p>
         </div>
 

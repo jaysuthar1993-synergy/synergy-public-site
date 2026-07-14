@@ -49,16 +49,35 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }) {
   const post = getBlogPost(params.slug);
   if (!post) return { title: 'Article Not Found' };
+
+  const url = `https://synergyfuturecorp.com/blog/${post.slug}`;
+
   return {
     title: post.title,
     description: post.description,
     keywords: post.keywords,
-    alternates: { canonical: `https://synergyfuturecorp.com/blog/${post.slug}` },
+    alternates: { canonical: url },
+    // Next.js SHALLOW-merges metadata: defining `openGraph` here REPLACES the
+    // root's openGraph object, so omitting `images` silently dropped og:image from
+    // every article. And because `twitter` was never overridden, every article
+    // shipped the HOMEPAGE's Twitter card — so a share into a CA WhatsApp group
+    // showed the wrong title and no image. Both must be declared explicitly.
     openGraph: {
+      type: 'article',
       title: post.title,
       description: post.description,
-      url: `https://synergyfuturecorp.com/blog/${post.slug}`,
-      type: 'article',
+      url,
+      siteName: 'Synergy Automation',
+      locale: 'en_IN',
+      publishedTime: post.published,
+      modifiedTime: post.updated || post.published,
+      images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.description,
+      images: ['/og-image.png'],
     },
   };
 }
@@ -178,11 +197,32 @@ export default function BlogPostPage({ params }) {
     '@type': 'Article',
     headline: post.title,
     description: post.description,
+    // `image` was missing — Google treats it as effectively required for Article
+    // and article rich results are not granted without it.
+    image: ['https://synergyfuturecorp.com/og-image.png'],
     datePublished: post.published,
-    dateModified: post.updated,
+    dateModified: post.updated || post.published,
     author: { '@type': 'Organization', name: 'Synergy Future Corp', url: 'https://synergyfuturecorp.com' },
-    publisher: { '@type': 'Organization', name: 'Synergy Automation', url: 'https://synergyfuturecorp.com' },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Synergy Automation',
+      url: 'https://synergyfuturecorp.com',
+      logo: { '@type': 'ImageObject', url: 'https://synergyfuturecorp.com/og-image.png' },
+    },
     mainEntityOfPage: { '@type': 'WebPage', '@id': `https://synergyfuturecorp.com/blog/${post.slug}` },
+  };
+
+  // Breadcrumbs: replaces the raw URL in the SERP with
+  // "synergyfuturecorp.com > Knowledge Hub > <title>" and reinforces hub/spoke
+  // structure for the crawler. There was no BreadcrumbList anywhere on the site.
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://synergyfuturecorp.com' },
+      { '@type': 'ListItem', position: 2, name: 'Knowledge Hub', item: 'https://synergyfuturecorp.com/blog' },
+      { '@type': 'ListItem', position: 3, name: post.title },
+    ],
   };
 
   const faqBlocks = post.content.filter(b => b.type === 'faq');
@@ -212,6 +252,10 @@ export default function BlogPostPage({ params }) {
 
   return (
     <div className="blog-layout">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}

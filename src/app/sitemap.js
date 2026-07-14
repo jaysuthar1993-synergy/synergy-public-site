@@ -1,5 +1,6 @@
 import { blogPosts } from '@/data/blogData';
 import { banks } from '@/data/bankData';
+import { updates } from '@/data/updatesData';
 
 const BASE = 'https://synergyfuturecorp.com';
 
@@ -22,11 +23,26 @@ export default function sitemap() {
     priority: b.priority || 0.7,
   }));
 
+  // Derive lastModified from actual CONTENT dates, not new Date().
+  // Stamping "modified today" on every build tells Google the whole site changed
+  // every time we deploy — even when nothing did. Google learns to distrust the
+  // lastmod signal and starts ignoring it, which then hurts us when a page
+  // genuinely does change.
+  const newestPost = blogPosts
+    .filter(p => !p.hidden)
+    .map(p => new Date(p.updated || p.published))
+    .sort((a, b) => b - a)[0] || new Date();
+
+  const newestUpdate = updates
+    .map(u => new Date(u.date))
+    .sort((a, b) => b - a)[0] || new Date();
+
   return [
-    { url: `${BASE}/`,              lastModified: new Date(), changeFrequency: 'weekly',  priority: 1.0 },
-    { url: `${BASE}/blog`,          lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.9 },
-    { url: `${BASE}/updates`,       lastModified: new Date(), changeFrequency: 'daily',   priority: 0.8 },
-    { url: `${BASE}/privacy-policy`,lastModified: new Date(), changeFrequency: 'yearly',  priority: 0.3 },
+    { url: `${BASE}/`,        lastModified: newestPost,   changeFrequency: 'weekly', priority: 1.0 },
+    { url: `${BASE}/blog`,    lastModified: newestPost,   changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${BASE}/updates`, lastModified: newestUpdate, changeFrequency: 'daily',  priority: 0.8 },
+    // /privacy-policy is deliberately ABSENT: it ships `noindex`, so listing it
+    // just parks a permanent "Excluded by noindex tag" error in Search Console.
     ...blogUrls,
     ...bankUrls,
   ];
