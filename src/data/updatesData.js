@@ -269,6 +269,22 @@ export const updates = [
     url: 'https://nitter.net/IncomeTaxIndia/status/2075832548945518601#m',
     relatedSlug: '',
   },
+  {
+    id: 'cbic-india-twitter-2026-07-14-customs-procedures-discussed',
+    type: 'govt',
+    title: 'Customs Procedures Discussed at Kolkata Meeting',
+    source: 'CBIC India (Twitter)',
+    date: '2026-07-14',
+    summary: 'Government officials and industry experts met in Kolkata to discuss ways to improve customs processes and procedures. This meeting aimed to address various issues faced by businesses dealing with customs. While no specific new rules were announced, these discussions can lead to future changes that might affect how you import or export goods.',
+    keyPoints: [
+      { label: 'Customs Meeting Held', text: 'CBIC Member chaired the 20th Customs Consultative Group meeting in Kolkata.' },
+      { label: 'Stakeholder Input', text: 'Many businesses and stakeholders shared their views on customs processes.' },
+      { label: 'Focus on Improvement', text: 'The meeting aimed to find solutions for various customs-related issues.' },
+    ],
+    tallyImpact: '',
+    url: 'https://nitter.net/cbic_india/status/2077011578134856071#m',
+    relatedSlug: '',
+  },
 ];
 
 export function getRecentUpdates(limit = 20) {
