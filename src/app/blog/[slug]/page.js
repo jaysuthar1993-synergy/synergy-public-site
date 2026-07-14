@@ -1,7 +1,44 @@
 import Link from 'next/link';
 import { getBlogPost, blogPosts, getVisiblePosts } from '@/data/blogData';
+import { banks } from '@/data/bankData';
 import '../../../components/BlogPage.css';
 import ShareBar from '../../../components/ShareBar';
+
+/**
+ * Auto-link bank names in article body text to their bank pages.
+ *
+ * The pillar article lists 12 Indian banks as plain strings and linked to NONE of
+ * the 8 bank pages that exist — so those pages sat near-orphaned while the article
+ * that should feed them just named them in text. This turns every mention into a
+ * real internal link, which is the cheapest way to make the pillar an actual hub.
+ *
+ * Longest names first, so "Bank of Baroda" is matched before "Bank".
+ */
+const BANK_LINKS = [...banks]
+  .sort((a, b) => b.name.length - a.name.length)
+  .map(b => ({ name: b.name, href: `/banks/${b.slug}` }));
+
+function autoLinkBanks(text, keyPrefix) {
+  if (typeof text !== 'string') return text;
+
+  const pattern = new RegExp(
+    `\\b(${BANK_LINKS.map(b => b.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`,
+    'g'
+  );
+
+  const parts = text.split(pattern);
+  if (parts.length === 1) return text;
+
+  return parts.map((part, i) => {
+    const match = BANK_LINKS.find(b => b.name === part);
+    if (!match) return part;
+    return (
+      <Link key={`${keyPrefix}-b${i}`} href={match.href} className="blog-inline-link">
+        {part}
+      </Link>
+    );
+  });
+}
 
 const APP_URL = 'https://app.synergyfuturecorp.com';
 
@@ -42,7 +79,9 @@ function renderContent(blocks) {
       case 'list':
         return (
           <ul key={i} className="blog-list">
-            {block.items.map((item, j) => <li key={j}>{item}</li>)}
+            {block.items.map((item, j) => (
+              <li key={j}>{autoLinkBanks(item, `l${i}-${j}`)}</li>
+            ))}
           </ul>
         );
       case 'table':
@@ -157,7 +196,19 @@ export default function BlogPostPage({ params }) {
     }))),
   } : null;
 
-  const otherPosts = getVisiblePosts().filter(p => p.slug !== params.slug).slice(0, 2);
+  // Link by TOPIC, not by array position.
+  // This was `getVisiblePosts().filter(...).slice(0, 2)`, which handed every
+  // article the same first two posts in blogData.js. Consequence: 4 of 7 articles
+  // had exactly ONE inbound link (from /blog) — they were effectively orphans, and
+  // Google had no signal about which pages matter. `related` is curated per post.
+  const visible = getVisiblePosts();
+  const bySlug = new Map(visible.map(p => [p.slug, p]));
+  const related = (post.related || [])
+    .map(s => bySlug.get(s))
+    .filter(p => p && p.slug !== params.slug);
+  const otherPosts = related.length
+    ? related.slice(0, 3)
+    : visible.filter(p => p.slug !== params.slug).slice(0, 2); // fallback for posts with no related[]
 
   return (
     <div className="blog-layout">

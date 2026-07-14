@@ -508,3 +508,13 @@
   .blog-infographic-grid { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; }
   .blog-infographic-step { padding: 14px 10px; }
 }
+
+/* Inline internal links inside article body text (auto-linked bank names).
+   Keeps the reading flow but makes the link obvious and crawlable. */
+.blog-inline-link {
+  color: #4F46E5;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+.blog-inline-link:hover { text-decoration-thickness: 2px; }

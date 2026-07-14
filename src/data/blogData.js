@@ -1,6 +1,7 @@
 export const blogPosts = [
   {
     slug: 'excel-to-tally-complete-guide',
+    related: ['direct-posting-vs-xml-import', 'bank-reconciliation-tally-prime-excel', 'excel-bank-statement-to-tallyprime-6-0'],
     title: 'Excel to Tally: The Complete Guide for Indian Accountants (2026)',
     tag: 'Guide',
     published: '2026-06-14',
@@ -186,6 +187,7 @@ export const blogPosts = [
   },
   {
     slug: 'direct-posting-vs-xml-import',
+    related: ['excel-to-tally-complete-guide', 'excel-bank-statement-to-tallyprime-6-0'],
     title: 'Direct Tally Posting vs XML File Import: What\'s the Difference?',
     tag: 'Explainer',
     published: '2026-06-14',
@@ -288,6 +290,7 @@ export const blogPosts = [
   // placeholder to avoid merge conflicts:
   {
   "slug": "bank-reconciliation-tally-prime-excel",
+    related: ['excel-to-tally-complete-guide', 'gst-reconciliation-tallyprime-2026-guide'],
   "title": "Bank Reconciliation Tally Prime: Excel to Tally 2026",
   "tag": "Guide",
   "published": "2026-07-08",
@@ -385,6 +388,7 @@ export const blogPosts = [
 },
   {
   slug: 'gst-reconciliation-tallyprime-2026-guide',
+    related: ['tds-entry-tallyprime-6-0-2026-guide', 'bank-reconciliation-tally-prime-excel', 'excel-to-tally-complete-guide'],
   title: 'GST Reconciliation TallyPrime 6.0: 2026 Insights',
   tag: 'Guide',
   published: '2026-07-08',
@@ -482,6 +486,7 @@ export const blogPosts = [
 },
   {
   "slug": "tds-entry-tallyprime-6-0-2026-guide",
+    related: ['payroll-accounting-tallyprime-efficiency-2026', 'gst-reconciliation-tallyprime-2026-guide'],
   "title": "TDS Entry in TallyPrime 6.0: 2026 Deadline Fixes",
   "tag": "Guide",
   "published": "2026-07-08",
@@ -579,6 +584,7 @@ export const blogPosts = [
 },
   {
   "slug": "payroll-accounting-tallyprime-efficiency-2026",
+    related: ['tds-entry-tallyprime-6-0-2026-guide', 'excel-to-tally-complete-guide'],
   "title": "TallyPrime 6.0 Payroll: Master Salary Entries 2026",
   "tag": "Guide",
   "published": "2026-07-08",
@@ -674,6 +680,7 @@ export const blogPosts = [
 },
   {
   "slug": "excel-bank-statement-to-tallyprime-6-0",
+    related: ['excel-to-tally-complete-guide', 'direct-posting-vs-xml-import'],
   "title": "Direct Excel Bank Statement to TallyPrime 6.0 2026",
   "tag": "Guide",
   "published": "2026-07-13",

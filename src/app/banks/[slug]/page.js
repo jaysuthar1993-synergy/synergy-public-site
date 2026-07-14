@@ -75,7 +75,13 @@ export default function BankPage({ params }) {
     ],
   };
 
-  const otherBanks = banks.filter(b => b.slug !== params.slug).slice(0, 4);
+  // Rotate through the list instead of slicing the first 4.
+  // `.filter(...).slice(0, 4)` always returned HDFC/SBI/ICICI/Axis, so PNB,
+  // Bank of Baroda and Yes Bank received ZERO inbound links from any other bank
+  // page — they were orphans. Rotating gives every bank inbound links from its
+  // neighbours, so link equity actually circulates.
+  const idx = banks.findIndex(b => b.slug === params.slug);
+  const otherBanks = [...banks.slice(idx + 1), ...banks.slice(0, idx)].slice(0, 4);
 
   return (
     <div className="blog-layout">
@@ -168,6 +174,24 @@ export default function BankPage({ params }) {
           <h3>Try with Your {bank.name} Statement — Free</h3>
           <p>Upload your {bank.name} Excel statement. Review entries. Post directly to Tally Prime or ERP 9.</p>
           <a href={`${APP_URL}/register`} className="cta-primary">Get Free Access</a>
+        </div>
+
+        {/* Bank pages previously linked ONLY to other bank pages — the blog and the
+            bank cluster were two disconnected islands with zero links between them.
+            These send authority into the pillar and let a reader who lands here from
+            "HDFC statement to Tally" go deeper. */}
+        <div className="blog-related">
+          <h3>Related Guides</h3>
+          <div className="blog-related-grid">
+            <Link href="/blog/excel-to-tally-complete-guide" className="blog-related-card">
+              <strong>Excel to Tally: The Complete Guide</strong>
+              <span>Formats, common errors, and the fastest way to post entries →</span>
+            </Link>
+            <Link href="/blog/bank-reconciliation-tally-prime-excel" className="blog-related-card">
+              <strong>Bank Reconciliation in Tally Prime</strong>
+              <span>Match your {bank.name} statement against your books →</span>
+            </Link>
+          </div>
         </div>
 
         <div className="blog-related">
