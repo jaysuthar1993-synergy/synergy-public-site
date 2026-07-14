@@ -287,143 +287,6 @@ export const blogPosts = [
   // tally-bank-entry-errors article removed — content had inaccurate feature claims; will rewrite when accurate
   // placeholder to avoid merge conflicts:
   {
-    slug: '_removed_tally-bank-entry-errors',
-    hidden: true,
-    title: '',
-    tag: '',
-    published: '2026-06-14',
-    updated: '2026-06-14',
-    description: '',
-    keywords: '',
-    content: [
-      {
-        type: 'intro',
-        text: 'Bank entry errors in Tally cost time and create reconciliation headaches. Most errors are preventable. Here are the seven most common ones — and how to avoid each before the entry ever reaches Tally.'
-      },
-      {
-        type: 'h2',
-        text: '1. Duplicate Entries'
-      },
-      {
-        type: 'p',
-        text: 'Importing the same statement twice, or overlapping date ranges, creates duplicate entries. Your bank balance in Tally shows double the actual figure.'
-      },
-      {
-        type: 'p',
-        text: 'How to avoid: Track which date ranges you have already imported. Synergy Automation flags entries that match previously posted transactions and asks you to confirm before proceeding.'
-      },
-      {
-        type: 'h2',
-        text: '2. Wrong Ledger Assignment'
-      },
-      {
-        type: 'p',
-        text: 'A NEFT payment to a supplier should go to that supplier\'s ledger. Bank charges should go to Bank Charges account. Interest received should go to Interest Received account. Getting this wrong means your P&L and balance sheet are wrong.'
-      },
-      {
-        type: 'p',
-        text: 'How to avoid: Use the review table to carefully assign each transaction to the correct Tally ledger before posting. Synergy Automation shows your full Tally chart of accounts in a dropdown — select the right one for each entry.'
-      },
-      {
-        type: 'h2',
-        text: '3. Wrong Date'
-      },
-      {
-        type: 'p',
-        text: 'Indian bank statements use several date formats: DD-MM-YYYY, DD/MM/YYYY, D-Mon-YYYY (like 14-Jun-2026). If the parser misreads the format, entries land on the wrong date.'
-      },
-      {
-        type: 'p',
-        text: 'How to avoid: Always verify date parsing by checking the first few entries in the review table before posting. Synergy Automation displays the parsed date clearly and handles all standard Indian bank date formats.'
-      },
-      {
-        type: 'h2',
-        text: '4. Swapped Debit and Credit'
-      },
-      {
-        type: 'p',
-        text: 'Some bank statements show debits as negative numbers, others as positive numbers in a Debit column. A wrong mapping creates entries where receipts appear as payments and vice versa.'
-      },
-      {
-        type: 'p',
-        text: 'How to avoid: Review the debit/credit mapping before posting. Synergy Automation auto-detects column structure but displays each entry\'s type (receipt/payment) in the review table for you to verify.'
-      },
-      {
-        type: 'h2',
-        text: '5. Missing or Garbled Narrations'
-      },
-      {
-        type: 'p',
-        text: 'Bank narrations like "UPI/123456/JOHN SMITH/OKSBI" are not useful in Tally. If you post them as-is, your ledger is hard to read and audit.'
-      },
-      {
-        type: 'p',
-        text: 'How to avoid: Edit narrations in the review step before posting. Change "UPI/2343344/SHARMA TRADERS/HDFC" to "Payment — Sharma Traders". Synergy Automation lets you edit each narration before it reaches Tally.'
-      },
-      {
-        type: 'h2',
-        text: '6. Wrong Bank Ledger in Tally'
-      },
-      {
-        type: 'p',
-        text: 'If you have multiple bank accounts — HDFC Current and SBI Savings — and you post entries to the wrong bank ledger in Tally, your reconciliation will never balance.'
-      },
-      {
-        type: 'p',
-        text: 'How to avoid: In Synergy Automation, select the correct bank ledger at the start of the upload. The system remembers your last selection per bank account.'
-      },
-      {
-        type: 'h2',
-        text: '7. Excel File Contains Header/Footer Rows'
-      },
-      {
-        type: 'p',
-        text: 'Many bank statement Excel files have extra rows: account details at the top (account number, IFSC code, name) and summary rows at the bottom (opening balance, closing balance, total). If these are parsed as transactions, you get garbage entries.'
-      },
-      {
-        type: 'p',
-        text: 'How to avoid: Synergy Automation automatically skips header and footer rows during parsing. The review table shows only actual transaction rows, so you can verify before posting.'
-      },
-      {
-        type: 'h2',
-        text: 'Summary: Prevention Checklist'
-      },
-      {
-        type: 'list',
-        items: [
-          'Track date ranges already imported to avoid duplicates',
-          'Review and assign ledger accounts for each entry before posting',
-          'Verify date format in the review table on first upload from a new bank',
-          'Check debit/credit direction on first upload',
-          'Edit garbled narrations before posting',
-          'Select the correct bank ledger at upload time',
-          'Verify that parser skipped header/footer rows (check first and last entry in review)'
-        ]
-      },
-      {
-        type: 'p',
-        text: 'All seven of these are addressed by reviewing entries before they reach Tally — which is exactly what the review step in Synergy Automation is designed for.'
-      },
-      {
-        type: 'h2',
-        text: 'Frequently Asked Questions'
-      },
-      {
-        type: 'faq',
-        items: [
-          {
-            q: 'How do I fix duplicate entries already in Tally?',
-            a: 'In Tally, go to the bank ledger and identify duplicates by comparing entries with your bank statement. Delete the duplicate vouchers. Then use Synergy Automation\'s duplicate detection on future imports to prevent this from happening again.'
-          },
-          {
-            q: 'Can Synergy Automation detect if I upload the wrong bank\'s statement?',
-            a: 'The system auto-detects the bank from the Excel format. If it cannot match the format, it will ask you to confirm column mapping before proceeding — which serves as a check.'
-          }
-        ]
-      }
-    ]
-  },
-  {
   "slug": "bank-reconciliation-tally-prime-excel",
   "title": "Bank Reconciliation Tally Prime: Excel to Tally 2026",
   "tag": "Guide",
@@ -837,12 +700,12 @@ export const blogPosts = [
     {
       "type": "steps",
       "items": [
-        "Download your bank statement from your bank's portal. Ensure it is in Excel (.xlsx) format.",
-        "Open your TallyPrime 6.0 company. Navigate to Gateway of Tally > Import > Bank Statement.",
-        "Select the correct bank ledger from your Tally company. This must match the bank statement.",
-        "Click 'Select from Drive' and choose your downloaded Excel bank statement file.",
-        "Confirm the file type as 'Excel' and initiate the import process.",
-        "Review the imported transactions within TallyPrime 6.0 for accuracy before posting."
+        "Download your bank statement from your bank's portal in Excel (.xlsx) format.",
+        "Open Synergy Automation and select your company. Keep Tally running with that company open.",
+        "Upload the Excel file. Synergy auto-detects your bank's format - no template selection needed.",
+        "Review every entry in the table: edit narrations, assign ledgers, skip anything you do not want.",
+        "Click Post. Entries appear instantly in your open Tally company as bank vouchers.",
+        "Open Tally and verify. No XML file was created and no Tally import screen was ever opened."
       ]
     },
     {
@@ -900,104 +763,6 @@ export const blogPosts = [
         {
           "q": "How much time does manual Excel entry take vs. Synergy Automation?",
           "a": "Manually entering an Excel bank statement with 500 transactions can take over 3 hours. Synergy Automation processes this in minutes, posting directly to Tally. Your data is stored securely in our system."
-        }
-      ]
-    }
-  ]
-},
-  {
-  "slug": "streamlining-bank-statement-import-tallyprime-6-0",
-    hidden: true,
-  "title": "Bank Statement Import in TallyPrime 6.0: 2026 Guide",
-  "tag": "Guide",
-  "published": "2026-07-13",
-  "updated": "2026-07-13",
-  "description": "Master direct bank statement import in TallyPrime 6.0. Reduce manual entry by 90% before the July 20th deadline.",
-  "keywords": "bank statement import tallyprime 6.0, tally bank reconciliation, direct bank entry tally, ca firm accounting workflow india, tally prime 6.0 automation",
-  "content": [
-    {
-      "type": "intro",
-      "text": "The July 20th GST deadline looms. You face piles of bank statements. Manual entry into TallyPrime 6.0 consumes critical hours. Errors creep in, delaying reconciliation. This article shows you how to import bank statements directly. You will learn to reduce entry time from 3 hours to 8 minutes. This frees up your team for complex advisory work."
-    },
-    {
-      "type": "h2",
-      "text": "What is Direct Bank Statement Import in Tally?"
-    },
-    {
-      "type": "p",
-      "text": "Direct bank statement import automates transaction entry. Instead of typing each entry, you upload a file. TallyPrime 6.0 reads the file. It creates vouchers automatically. Think of it like a digital scanner for your bank transactions. This eliminates tedious data re-entry and reduces errors significantly."
-    },
-    {
-      "type": "h2",
-      "text": "How to Import Bank Statements in TallyPrime 6.0 — Step by Step"
-    },
-    {
-      "type": "steps",
-      "items": [
-        "Download your bank statement. Ensure it's a PDF from your bank's portal. TallyPrime 6.0 works best with clean data.",
-        "Use Synergy Automation to process your bank statement file. This FREE tool converts your statement data into a Tally-ready format. Your data is stored securely in our system.",
-        "Open TallyPrime 6.0. Navigate to Gateway of Tally > Import Data > Transactions.",
-        "Select 'Voucher' as the import type. Choose the file generated by Synergy Automation.",
-        "TallyPrime 6.0 will prompt for mapping. Ensure your bank ledger name in Tally matches the statement. Click 'Accept'.",
-        "Review the imported vouchers. Most entries post directly. Small adjustments might be needed for narration mapping."
-      ]
-    },
-    {
-      "type": "h2",
-      "text": "Mistakes That Cost Indian CAs Hours"
-    },
-    {
-      "type": "list",
-      "items": [
-        "Mistake: Using scanned PDFs not directly from the bank. What breaks: The import tool cannot read the text. Fix: Always download fresh statements from your bank's website.",
-        "Mistake: Mismatching bank ledger names in Tally. What breaks: Tally cannot assign transactions to the correct account. Fix: Verify the exact ledger name in TallyPrime 6.0 before import.",
-        "Mistake: Not checking the opening/closing balance post-import. What breaks: Reconciliation becomes impossible if balances don't match. Fix: Always compare Tally's closing balance with the bank statement's.",
-        "Mistake: Relying solely on XML converters. What breaks: These tools require manual XML uploads and error-prone mapping. Fix: Use solutions that post directly to Tally without XML files."
-      ]
-    },
-    {
-      "type": "h2",
-      "text": "Pro Tips for 2026"
-    },
-    {
-      "type": "p",
-      "text": "For frequent transactions, set up recurring entry templates in TallyPrime 6.0. This further speeds up manual adjustments. Consider setting up Tally's connected banking for real-time balance checks. Synergy Automation provides direct posting to TallyPrime 6.0 and Tally ERP 9, eliminating intermediate files."
-    },
-    {
-      "type": "infographic",
-      "variant": "steps",
-      "title": "Streamlined Bank Import Workflow",
-      "items": [
-        "Download Bank Statement (PDF)",
-        "Process with Synergy Automation",
-        "Open TallyPrime 6.0 Import",
-        "Map Bank Ledger",
-        "Import Transactions",
-        "Verify Balances"
-      ]
-    },
-    {
-      "type": "faq",
-      "items": [
-        {
-          "q": "How to import bank statements directly into TallyPrime 6.0?",
-          "a": "Use Synergy Automation to convert your bank statement PDF. Then, navigate to Gateway of Tally > Import Data > Transactions and select the processed file."
-        },
-        {
-          "q": "Can I import statements from HDFC and ICICI banks?",
-          "a": "Yes, Synergy Automation supports statements from most major Indian banks like HDFC, ICICI, SBI, and Kotak. Ensure your statement is in PDF format."
-        },
-        {
-          "q": "What if my bank statement PDF is password protected?",
-          "a": "You will need to remove the password protection from the PDF before uploading it to Synergy Automation. TallyPrime 6.0 cannot process password-protected files."
-        },
-        {
-          "q": "Is Synergy Automation free to use for CAs?",
-          "a": "Yes, Synergy Automation is FREE for all users. It allows direct posting to TallyPrime 6.0 and Tally ERP 9 without any charges."
-        },
-        {
-          "q": "How much time does bank statement import save?",
-          "a": "Manual entry for a typical week's transactions can take 3 hours. With Synergy Automation, this process is reduced to approximately 8 minutes, a saving of over 90%."
         }
       ]
     }
