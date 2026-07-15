@@ -285,6 +285,22 @@ export const updates = [
     url: 'https://nitter.net/cbic_india/status/2077011578134856071#m',
     relatedSlug: '',
   },
+  {
+    id: 'income-tax-india-t-2026-07-15-ais-for-itr-filing-check-you',
+    type: 'govt',
+    title: 'AIS for ITR Filing: Check Your Financial Snapshot Before July 31st',
+    source: 'Income Tax India (Twitter)',
+    date: '2026-07-15',
+    summary: 'The Income Tax Department is reminding taxpayers to check their Annual Information Statement (AIS) for a complete view of their financial transactions like bank interest and dividends. Over 5 crore taxpayers have already used this tool. It\'s crucial to reconcile your AIS with your records and report any mistakes before filing your Income Tax Returns (ITR) 1 & 2 for Assessment Year 2026-27.',
+    keyPoints: [
+      { label: 'Action Required', text: 'Log in to incometax.gov.in to view and verify your AIS.' },
+      { label: 'Deadline', text: 'File your ITR 1 & 2 for AY 2026-27 by July 31, 2026.' },
+      { label: 'Reporting Errors', text: 'Use the online feedback option on the Income Tax portal to correct any discrepancies in your AIS.' },
+    ],
+    tallyImpact: '',
+    url: 'https://nitter.net/IncomeTaxIndia/status/2077265896528281607#m',
+    relatedSlug: '',
+  },
 ];
 
 export function getRecentUpdates(limit = 20) {
