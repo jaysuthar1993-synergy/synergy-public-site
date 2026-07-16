@@ -883,8 +883,19 @@ export const blogPosts = [
  *
  * On the develop PREVIEW deploy, set NEXT_PUBLIC_SHOW_DRAFTS=1 so drafts render
  * and you can actually review the article before approving it.
+ *
+ * SAFETY — do not simplify this to just the env var:
+ * Cloudflare Pages' newer UI applies "Variables and secrets" to BOTH the preview
+ * AND production environments (there is no per-environment split in that panel).
+ * So NEXT_PUBLIC_SHOW_DRAFTS=1 would otherwise leak drafts onto the live site.
+ * We therefore ALSO require this build to not be the production branch. Cloudflare
+ * injects CF_PAGES_BRANCH into every build; production is `master`. On master,
+ * drafts are hidden no matter what the env var says.
  */
-const SHOW_DRAFTS = process.env.NEXT_PUBLIC_SHOW_DRAFTS === '1';
+const CF_BRANCH = process.env.CF_PAGES_BRANCH; // set by Cloudflare Pages at build time
+const IS_PRODUCTION_BRANCH = CF_BRANCH === 'master';
+const SHOW_DRAFTS =
+  process.env.NEXT_PUBLIC_SHOW_DRAFTS === '1' && !IS_PRODUCTION_BRANCH;
 
 export function getVisiblePosts() {
   return SHOW_DRAFTS ? blogPosts : blogPosts.filter(p => !p.hidden);

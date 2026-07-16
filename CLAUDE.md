@@ -92,8 +92,14 @@ This replaced a merge-timing gate, which failed: an unapproved article went live
 because an unrelated merge swept it along. **Merge timing is not a safety
 mechanism.**
 
-Set `NEXT_PUBLIC_SHOW_DRAFTS=1` on the **preview/develop branch only** so drafts
-stay reviewable. Never on production. The sitemap ignores it entirely.
+`NEXT_PUBLIC_SHOW_DRAFTS=1` makes drafts reviewable on the preview deploy. But
+Cloudflare Pages' newer "Variables and secrets" UI has **no per-environment split**
+— a variable added there applies to production too. So the draft gate does NOT
+trust the env var alone: it also requires `CF_PAGES_BRANCH !== 'master'` (Cloudflare
+injects the branch into every build; production is `master`). On the production
+branch, drafts are hidden no matter what the env var says. Verified: a `master`
+build with `NEXT_PUBLIC_SHOW_DRAFTS=1` does not build draft pages. The sitemap
+ignores drafts entirely regardless.
 
 ### 8. robots.txt — do not delete `src/app/robots.js`
 Cloudflare **auto-injects a default robots.txt when the origin serves none**, and
