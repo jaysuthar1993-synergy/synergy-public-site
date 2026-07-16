@@ -301,6 +301,21 @@ export const updates = [
     url: 'https://nitter.net/IncomeTaxIndia/status/2077265896528281607#m',
     relatedSlug: '',
   },
+  {
+    id: 'income-tax-india-t-2026-07-16-new-cost-inflation-index-for',
+    type: 'govt',
+    title: 'New Cost Inflation Index for FY 2026-27 Announced',
+    source: 'Income Tax India (Twitter)',
+    date: '2026-07-16',
+    summary: 'The government has released the Cost Inflation Index (CII) for the financial year 2026-27. This index is important for calculating capital gains when you sell assets like property or shares. The new index value is 384, which you\'ll need for tax calculations related to the 2026-27 tax year.',
+    keyPoints: [
+      { label: 'New CII Value', text: 'The Cost Inflation Index for FY 2026-27 is 384.' },
+      { label: 'Purpose of CII', text: 'CII is used to adjust the purchase cost of assets for inflation when calculating capital gains tax.' },
+    ],
+    tallyImpact: '',
+    url: 'https://nitter.net/IncomeTaxIndia/status/2077586020464570562#m',
+    relatedSlug: '',
+  },
 ];
 
 export function getRecentUpdates(limit = 20) {
