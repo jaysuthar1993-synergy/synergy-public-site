@@ -332,6 +332,22 @@ export const updates = [
     url: 'https://nitter.net/IncomeTaxIndia/status/2077265896528281607#m',
     relatedSlug: '',
   },
+  {
+    id: 'mca-india-twitter-2026-07-15-new-corporate-mitra-course-f',
+    type: 'govt',
+    title: 'New \'Corporate Mitra\' Course for Graduates to Help MSMEs',
+    source: 'MCA India (Twitter)',
+    date: '2026-07-15',
+    summary: 'A new \'Corporate Mitra\' course is now open for registration. This course, announced in the Union Budget 2026-27, aims to train para-professionals to assist small and medium businesses with their compliance needs. Eligible graduates can register online until July 31st, 2026.',
+    keyPoints: [
+      { label: 'Registration Period', text: 'Register for the \'Corporate Mitra\' course between July 15th and July 31st, 2026.' },
+      { label: 'Purpose of Course', text: 'The course will create para-professionals to support MSMEs with their compliance.' },
+      { label: 'Who Can Register', text: 'Eligible graduates can apply for this new training program.' },
+    ],
+    tallyImpact: '',
+    url: 'https://nitter.net/MCA21India/status/2077410067159400636#m',
+    relatedSlug: '',
+  },
 ];
 
 export function getRecentUpdates(limit = 20) {
