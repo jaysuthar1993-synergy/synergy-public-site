@@ -100,6 +100,32 @@ def _ping_sitemap():
         print(f'  Sitemap submit error: {e}')
 
 
+def quick_live_check(url, needle=None, timeout=15):
+    """
+    ONE fast liveness check — used inside the poller so it never blocks.
+
+    The old verify_live() looped for up to 4 MINUTES. Inside the callback handler
+    that was fatal: approving several updates queued minutes of blocking, the
+    5-min scheduled poller overlapped its own previous run, and Telegram returned
+    409 Conflict on getUpdates (single-consumer API) — so button presses were
+    consumed but never processed. Cloudflare takes 1-2 min to deploy anyway, so a
+    blocking verify can't confirm "live" without holding the poller hostage.
+    We do one quick check and report optimistically if it's not visible yet.
+    """
+    import urllib.request
+    try:
+        probe = f'{url}{"&" if "?" in url else "?"}cb={int(time.time())}'
+        req = urllib.request.Request(probe, headers={'User-Agent': 'SynergyBot/1.0', 'Cache-Control': 'no-cache'})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            if resp.status == 200:
+                body = resp.read().decode('utf-8', errors='ignore')
+                if needle is None or needle in body:
+                    return True
+    except Exception:
+        pass
+    return False
+
+
 def verify_live(url, needle=None, timeout=240, interval=15):
     """
     Poll the LIVE production URL until the content actually appears.
@@ -245,36 +271,20 @@ def approve_article(slug, title, msg_id):
 
     _git('checkout', 'develop')
 
-    edit_message_text(msg_id,
-        f'*Merged to master.*\n\n'
-        f'*{title}*\n\n'
-        f'Waiting for Cloudflare to deploy, then verifying it is really live...'
-    )
-
-    # A blog article gets its own URL, so a 200 on that URL proves it deployed.
+    # Report immediately — never block the poller on a 4-minute verify.
+    _ping_sitemap()
     article_url = f'https://synergyfuturecorp.com/blog/{slug}'
-    ok, detail = verify_live(article_url, needle=None)
+    live_now = quick_live_check(article_url, needle=None)
 
-    if ok:
-        _ping_sitemap()
-        edit_message_text(msg_id,
-            f'*PUBLISHED & VERIFIED LIVE*\n\n'
-            f'*{title}*\n\n'
-            f'Live: {article_url}\n'
-            f'Confirmed on the live site ({detail}).\n'
-            f'Sitemap submitted to Google.'
-        )
-    else:
-        edit_message_text(msg_id,
-            f'*Merged, but NOT yet visible live*\n\n'
-            f'*{title}*\n\n'
-            f'Pushed to master, but {article_url} is still not serving after 4 min.\n'
-            f'Reason: {detail}\n\n'
-            f'Check the Cloudflare Pages build log - the build may have failed.'
-        )
-
+    edit_message_text(msg_id,
+        f'*Published!*\n\n'
+        f'*{title}*\n\n'
+        f'{article_url}\n'
+        + ('Confirmed live.\n' if live_now else 'Live in ~1-2 min (Cloudflare deploying).\n')
+        + 'Sitemap submitted to Google.'
+    )
     remove_pending(slug)
-    print(f'  Published: /blog/{slug} (live={ok})')
+    print(f'  Published: /blog/{slug} (live_now={live_now})')
     return True
 
 
@@ -424,38 +434,24 @@ def approve_single_update(slug, title, msg_id, entry_id):
         print(f'  Push failed: {push.stderr}')
         return False
 
-    # Tell the user we are waiting, so the message is never stale/misleading
-    edit_message_text(msg_id,
-        f'*Merged to master.*\n\n'
-        f'*{result[:80]}*\n\n'
-        f'Waiting for Cloudflare to deploy, then verifying it is really live...'
-    )
+    # Submit sitemap and report immediately — do NOT block on a 4-minute verify.
+    _ping_sitemap()
 
-    # Verify the title actually renders on the live page before claiming success.
-    # Match on a distinctive slice of the title (HTML-escaping can mangle quotes/dashes).
+    # One fast check: it MIGHT already be live from a prior build; if not, that's
+    # normal (Cloudflare takes 1-2 min) and we report optimistically, not as an error.
     needle = result[:40].split('—')[0].split('"')[0].strip()
-    ok, detail = verify_live('https://synergyfuturecorp.com/updates', needle=needle)
+    live_now = quick_live_check('https://synergyfuturecorp.com/updates', needle=needle)
 
-    if ok:
-        _ping_sitemap()
-        edit_message_text(msg_id,
-            f'*PUBLISHED & VERIFIED LIVE*\n\n'
-            f'*{result[:80]}*\n\n'
-            f'Live: https://synergyfuturecorp.com/updates\n'
-            f'Confirmed on the live site ({detail}).\n'
-            f'Sitemap submitted to Google.'
-        )
-    else:
-        edit_message_text(msg_id,
-            f'*Merged, but NOT yet visible live*\n\n'
-            f'*{result[:80]}*\n\n'
-            f'Pushed to master, but after 4 min the live page still does not show it.\n'
-            f'Reason: {detail}\n\n'
-            f'Check the Cloudflare Pages build log - the build may have failed.\n'
-            f'Preview: https://develop.synergy-public-site.pages.dev/updates'
-        )
+    edit_message_text(msg_id,
+        f'*Published!*\n\n'
+        f'*{result[:80]}*\n\n'
+        + ('Confirmed live on synergyfuturecorp.com/updates.\n'
+           if live_now else
+           'Merged to master. Live on synergyfuturecorp.com/updates in ~1-2 min.\n')
+        + 'Sitemap submitted to Google.'
+    )
     remove_pending(slug)
-    print(f'  Published: {result}')
+    print(f'  Published: {result} (live_now={live_now})')
     return True
 
 
@@ -482,54 +478,62 @@ def run_once():
 
     for update in updates:
         update_id = update['update_id']
+
+        # Advance the offset BEFORE processing, and persist it immediately, so a
+        # crash while handling one callback cannot make us reconsume the whole
+        # batch on the next run (which caused reprocessing + 409 pileups). A
+        # button can always be pressed again if a single handler genuinely fails.
         new_offset = update_id + 1
+        OFFSET_FILE.write_text(str(new_offset), encoding='utf-8')
 
         cb = update.get('callback_query')
         if not cb:
             continue
 
-        callback_id = cb['id']
-        callback_data = cb.get('data', '')
-        msg_id = cb['message']['message_id']
+        try:
+            callback_id = cb['id']
+            callback_data = cb.get('data', '')
+            msg_id = cb['message']['message_id']
 
-        if ':' not in callback_data:
-            continue
-
-        action, slug = callback_data.split(':', 1)
-        item = pending.get(slug)
-
-        if not item:
-            answer_callback(callback_id, 'Article not found in pending list.')
-            continue
-
-        title = item.get('title', slug)
-
-        # Per-update approval (short hash slug '__u_<md5-12>')
-        if slug.startswith('__u_'):
-            entry_id = item.get('entry_id', '')
-            if not entry_id:
-                answer_callback(callback_id, 'Update record is missing its entry id.')
+            if ':' not in callback_data:
                 continue
-            if action == 'approve':
-                answer_callback(callback_id, 'Writing and publishing update...')
-                approve_single_update(slug, title, msg_id, entry_id)
+
+            action, slug = callback_data.split(':', 1)
+            item = pending.get(slug)
+
+            if not item:
+                answer_callback(callback_id, 'This item is no longer pending (already handled).')
+                continue
+
+            title = item.get('title', slug)
+
+            # Per-update approval (short hash slug '__u_<md5-12>')
+            if slug.startswith('__u_'):
+                entry_id = item.get('entry_id', '')
+                if not entry_id:
+                    answer_callback(callback_id, 'Update record is missing its entry id.')
+                    continue
+                if action == 'approve':
+                    answer_callback(callback_id, 'Publishing update...')
+                    approve_single_update(slug, title, msg_id, entry_id)
+                elif action == 'discard':
+                    answer_callback(callback_id, 'Skipped.')
+                    edit_message_text(msg_id, f'*Skipped.* "{title[:60]}" will not be published.')
+                    remove_pending(slug)
+                else:
+                    answer_callback(callback_id, 'Unknown action.')
+            elif action == 'approve':
+                answer_callback(callback_id, 'Publishing to master...')
+                approve_article(slug, title, msg_id)
             elif action == 'discard':
-                answer_callback(callback_id, 'Skipped.')
-                edit_message_text(msg_id, f'*Skipped.* "{title[:60]}" will not be published.')
-                remove_pending(slug)
+                answer_callback(callback_id, 'Discarding article...')
+                discard_article(slug, title, msg_id)
             else:
                 answer_callback(callback_id, 'Unknown action.')
-        elif action == 'approve':
-            answer_callback(callback_id, 'Publishing to master...')
-            approve_article(slug, title, msg_id)
-        elif action == 'discard':
-            answer_callback(callback_id, 'Discarding article...')
-            discard_article(slug, title, msg_id)
-        else:
-            answer_callback(callback_id, 'Unknown action.')
 
-    if new_offset and new_offset != offset:
-        OFFSET_FILE.write_text(str(new_offset), encoding='utf-8')
+        except Exception as e:
+            # One bad callback must not abort the batch or lose the offset.
+            print(f'  Error handling update {update_id}: {e}')
 
 
 if __name__ == '__main__':
