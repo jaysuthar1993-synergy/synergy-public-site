@@ -881,21 +881,21 @@ export const blogPosts = [
  * a draft cannot go live even if a develop->master merge sweeps it along.
  * That makes the approval gate structural rather than a matter of merge timing.
  *
- * On the develop PREVIEW deploy, set NEXT_PUBLIC_SHOW_DRAFTS=1 so drafts render
- * and you can actually review the article before approving it.
+ * The BRANCH is the signal — no env var needed on Cloudflare.
+ * Cloudflare Pages injects CF_PAGES_BRANCH into every build. Production builds on
+ * `master`; preview builds on any other branch (develop). So:
+ *   - master  -> drafts hidden (production, always)
+ *   - develop -> drafts shown  (preview, so you can review before approving)
  *
- * SAFETY — do not simplify this to just the env var:
- * Cloudflare Pages' newer UI applies "Variables and secrets" to BOTH the preview
- * AND production environments (there is no per-environment split in that panel).
- * So NEXT_PUBLIC_SHOW_DRAFTS=1 would otherwise leak drafts onto the live site.
- * We therefore ALSO require this build to not be the production branch. Cloudflare
- * injects CF_PAGES_BRANCH into every build; production is `master`. On master,
- * drafts are hidden no matter what the env var says.
+ * We deliberately do NOT gate on NEXT_PUBLIC_SHOW_DRAFTS for Cloudflare, because
+ * that panel's variables apply to production too and would leak drafts onto the
+ * live site. The env var only acts as a LOCAL override (when CF_PAGES_BRANCH is
+ * absent, i.e. `npm run build` on your machine) so you can preview drafts locally.
  */
 const CF_BRANCH = process.env.CF_PAGES_BRANCH; // set by Cloudflare Pages at build time
-const IS_PRODUCTION_BRANCH = CF_BRANCH === 'master';
-const SHOW_DRAFTS =
-  process.env.NEXT_PUBLIC_SHOW_DRAFTS === '1' && !IS_PRODUCTION_BRANCH;
+const SHOW_DRAFTS = CF_BRANCH
+  ? CF_BRANCH !== 'master'                             // on Cloudflare: branch decides
+  : process.env.NEXT_PUBLIC_SHOW_DRAFTS === '1';       // local only: opt-in override
 
 export function getVisiblePosts() {
   return SHOW_DRAFTS ? blogPosts : blogPosts.filter(p => !p.hidden);
