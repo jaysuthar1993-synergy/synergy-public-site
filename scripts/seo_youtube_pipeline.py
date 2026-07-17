@@ -164,11 +164,12 @@ def _clean_topic(title):
     return t
 
 
-def get_trending_topic():
+def get_trending_topic(return_all=False):
     """
-    Discover trending topic from recent high-view Tally/accounting YouTube videos.
-    Searches multiple seed queries, skips topics already in done list,
-    returns the first fresh topic found.
+    Discover trending topic(s) from recent high-view Tally/accounting YouTube videos.
+    Searches multiple seed queries, skips topics already in done list.
+    Returns the first fresh topic (default), or the full list of fresh topics when
+    return_all=True — the caller then keeps trying until one passes relevance+dedup.
     """
     try:
         from googleapiclient.discovery import build
@@ -226,22 +227,26 @@ def get_trending_topic():
             print(f'  Warning: trending search failed for "{query}": {e}')
 
     if not candidates:
-        return None
+        return [] if return_all else None
 
-    # Pick first candidate whose topic is not already done
+    # Collect every fresh candidate topic (not already done, no matching slug)
+    fresh = []
     for cand in candidates:
         topic = _clean_topic(cand['title'])
         if topic.lower() in done:
-            print(f'  Skip (done): "{topic[:60]}"')
             continue
-        # Also skip if a very similar slug already exists in blogData.js
         slug_hint = topic.lower()[:25].replace(' ', '-')
         if slug_hint in blog_content:
-            print(f'  Skip (slug exists): "{topic[:60]}"')
             continue
-        print(f'  Trending video: "{cand["title"][:65]}" -- {cand["channel"]}')
-        print(f'  Topic: "{topic}"')
-        return topic
+        if topic not in fresh:
+            fresh.append(topic)
+
+    if return_all:
+        return fresh
+
+    if fresh:
+        print(f'  Topic: "{fresh[0]}"')
+        return fresh[0]
 
     print('  All trending topics already covered. Falling back to queue.')
     return None
@@ -1129,6 +1134,70 @@ def mark_topic_done(topic):
         f.write(topic + '\n')
 
 
+def get_queue_topics(limit=10):
+    """Return up to `limit` fresh (not-done) topics from the queue file, in order."""
+    if not QUEUE_FILE.exists():
+        return []
+    done = set()
+    if DONE_FILE.exists():
+        done = set(DONE_FILE.read_text(encoding='utf-8').splitlines())
+    topics = [
+        line.strip()
+        for line in QUEUE_FILE.read_text(encoding='utf-8').splitlines()
+        if line.strip() and not line.startswith('#') and line.strip() not in done
+    ]
+    return topics[:limit]
+
+
+def select_publishable_topic():
+    """
+    Keep trying candidate topics until one passes BOTH the relevance check and the
+    duplicate check — instead of giving up after a single fallback.
+
+    Order: trending YouTube topics first (they are what people are actually
+    searching right now), then the manual queue. A topic that fails either check
+    is marked done so it is never retried. Returns a usable topic, or None if every
+    candidate is exhausted (nothing genuinely new to write today).
+    """
+    trending = get_trending_topic(return_all=True) or []
+    queued = get_queue_topics(limit=10)
+
+    # De-dupe while preserving order (trending before queue)
+    seen = set()
+    candidates = []
+    for t in trending + queued:
+        key = t.lower()
+        if key not in seen:
+            seen.add(key)
+            candidates.append(t)
+
+    if not candidates:
+        print('  No candidate topics available.')
+        return None
+
+    print(f'  {len(candidates)} candidate topic(s) to try.')
+    for topic in candidates:
+        print(f'\n  Trying: "{topic}"')
+
+        is_relevant, reason = check_topic_relevance(topic)
+        if not is_relevant:
+            print(f'    SKIP (not Tally-related): {reason}')
+            mark_topic_done(topic)
+            continue
+
+        is_dup, dup_reason = check_topic_duplicate(topic)
+        if is_dup:
+            print(f'    SKIP (duplicates existing article): {dup_reason}')
+            mark_topic_done(topic)
+            continue
+
+        print(f'    OK -> "{topic}"')
+        return topic
+
+    print('\n  Every candidate was off-topic or already covered. Nothing new today.')
+    return None
+
+
 # ─────────────────────────────────────────────
 # MAIN
 # ─────────────────────────────────────────────
@@ -1234,43 +1303,15 @@ def main():
 
     # --trending  (discover topic from YouTube trending videos)
     if args and args[0] == '--trending':
-        print('Discovering trending topic from YouTube...')
-        topic = get_trending_topic()
+        print('Discovering a fresh topic (trending + queue)...')
+        # Keeps trying candidates until one passes BOTH relevance and dedup,
+        # instead of giving up after a single fallback.
+        topic = select_publishable_topic()
         if not topic:
-            print('Could not discover trending topic. Falling back to queue.')
-            topic = get_next_topic_from_queue()
+            print('Nothing new to write today. Exiting cleanly.')
+            return
 
-        # Relevance check — reject topics not genuinely about Tally workflows
-        print(f'Checking relevance of "{topic}"...')
-        is_relevant, reason = check_topic_relevance(topic)
-        if not is_relevant:
-            print(f'  SKIP (not Tally-related): {reason}')
-            mark_topic_done(topic)  # avoid picking same topic again
-            print('  Trying queue fallback...')
-            topic = get_next_topic_from_queue()
-            print(f'  Queue topic: "{topic}"')
-
-        # Guard against keyword cannibalization: refuse a topic that duplicates
-        # something already published. Without this, the pipeline kept picking the
-        # same trending subject and we ended up with FOUR articles all fighting
-        # each other for "bank statement to Tally".
-        is_dup, dup_reason = check_topic_duplicate(topic)
-        if is_dup:
-            print(f'  SKIP (duplicates existing article): {dup_reason}')
-            mark_topic_done(topic)
-            print('  Trying queue fallback...')
-            topic = get_next_topic_from_queue()
-            print(f'  Queue topic: "{topic}"')
-
-            # Check the fallback too — the queue can also hold a covered topic
-            is_dup2, dup_reason2 = check_topic_duplicate(topic)
-            if is_dup2:
-                print(f'  Queue topic ALSO duplicates existing content: {dup_reason2}')
-                print('  Nothing new to write today. Exiting cleanly.')
-                mark_topic_done(topic)
-                return
-
-        print(f'Topic: "{topic}"')
+        print(f'\nTopic: "{topic}"')
         success = run_pipeline(topic, provider=provider, auto=auto, push=push)
         if success:
             mark_topic_done(topic)
