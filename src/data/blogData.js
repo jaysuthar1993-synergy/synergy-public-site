@@ -1167,7 +1167,7 @@ export const blogPosts = [
 },
   {
   "slug": "gst-returns-filing-easy-tallyprime-6-0",
-    hidden: true,
+    hidden: false,
   "title": "GST Returns Filing Easy: TallyPrime 6.0 Workflow (2026)",
   "tag": "Guide",
   "published": "2026-07-18",
