@@ -1070,7 +1070,7 @@ export const blogPosts = [
 },
   {
   "slug": "eway-bill-closure-tallyprime-6-0-2026",
-    hidden: true,
+    hidden: false,
   "title": "E-Way Bill Closure in TallyPrime 6.0: 2026 Guide",
   "tag": "Guide",
   "published": "2026-07-17",
