@@ -740,6 +740,50 @@ def write_pending_update_to_file(entry_id):
     return True, record['title']
 
 
+def _existing_update_titles():
+    """Titles of updates already PUBLISHED (updatesData.js) or already QUEUED
+    (pending store) — so we don't queue a second copy of the same news in one run."""
+    titles = []
+    if UPDATES_DATA_FILE.exists():
+        c = UPDATES_DATA_FILE.read_text(encoding='utf-8')
+        titles += re.findall(r"title:\s*'([^']+)'", c)
+    if UPDATES_PENDING_FILE.exists():
+        try:
+            p = json.loads(UPDATES_PENDING_FILE.read_text(encoding='utf-8'))
+            titles += [v.get('title', '') for v in p.values()]
+        except Exception:
+            pass
+    return [t for t in titles if t]
+
+
+def is_duplicate_update(title, summary):
+    """
+    Semantic dedup: does this update convey the SAME news as one already published
+    or queued? The exact ID/title-slug check can't catch this — e.g. "Income Tax
+    Filing: Check AIS & Form 26AS" vs "Check AIS & Form 26AS for AY 2026-27" are
+    the same circular with different wording. Ask Gemini. Returns (is_dup, reason).
+    """
+    existing = _existing_update_titles()
+    if not existing:
+        return False, ''
+    listing = '\n'.join(f'- {t}' for t in existing[-40:])  # recent 40 is plenty
+    prompt = (
+        f'Updates already published or queued:\n{listing}\n\n'
+        f'NEW update:\n  Title: {title}\n  Summary: {summary[:300]}\n\n'
+        'Does the NEW update convey substantially the SAME information as any one '
+        'listed above — the same circular, deadline, utility, or guidance — such that '
+        'a reader would find it redundant?\n'
+        'Reply with exactly one line: DUPLICATE or UNIQUE, then a colon and a short reason.'
+    )
+    result = _call_gemini(prompt, max_tokens=60, temperature=0.0)
+    if not result:
+        return False, 'dedup check unavailable'
+    line = result.strip().splitlines()[0]
+    is_dup = line.upper().startswith('DUPLICATE')
+    reason = line.split(':', 1)[-1].strip() if ':' in line else line
+    return is_dup, reason
+
+
 def run_monitor_auto(mode='all', days_back=3):
     """Non-interactive: find new items, generate summaries, write to updatesData.js."""
     seen = load_seen()
@@ -791,6 +835,14 @@ def run_monitor_auto(mode='all', days_back=3):
             if title_slug and title_slug in content.lower():
                 print(f'  Title already present — skipping duplicate.')
                 continue
+
+        # Semantic dedup — catches the SAME news worded differently, which the
+        # exact-match checks above miss. Prevents queuing near-identical updates
+        # (e.g. two "Check AIS & Form 26AS" items) that waste review time.
+        is_dup, dup_reason = is_duplicate_update(summary['title'], summary['summary'])
+        if is_dup:
+            print(f'  Duplicate of an existing/queued update — skipped: {dup_reason}')
+            continue
 
         # Save to pending store (not written to JS file yet)
         save_to_pending_updates(entry_id, js_entry, item, summary)
