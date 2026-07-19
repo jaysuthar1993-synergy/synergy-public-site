@@ -412,8 +412,9 @@ export default function LandingPage() {
             </ul>
           </div>
           <div className="lp-footer-col">
-            <h4 className="lp-footer-heading">Legal &amp; Support</h4>
+            <h4 className="lp-footer-heading">Company</h4>
             <ul className="lp-footer-links">
+              <li><Link href="/about" className="lp-footer-link">About Us</Link></li>
               <li><Link href="/privacy-policy" className="lp-footer-link">Privacy Policy</Link></li>
               <li><a href="mailto:support@synergyfuturecorp.com" className="lp-footer-link">support@synergyfuturecorp.com</a></li>
             </ul>

@@ -41,6 +41,7 @@ export default function sitemap() {
     { url: `${BASE}/`,        lastModified: newestPost,   changeFrequency: 'weekly', priority: 1.0 },
     { url: `${BASE}/blog`,    lastModified: newestPost,   changeFrequency: 'weekly', priority: 0.9 },
     { url: `${BASE}/updates`, lastModified: newestUpdate, changeFrequency: 'daily',  priority: 0.8 },
+    { url: `${BASE}/about`,   lastModified: newestPost,   changeFrequency: 'monthly', priority: 0.5 },
     // /privacy-policy is deliberately ABSENT: it ships `noindex`, so listing it
     // just parks a permanent "Excluded by noindex tag" error in Search Console.
     ...blogUrls,
