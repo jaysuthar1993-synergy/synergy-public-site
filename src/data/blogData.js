@@ -1264,7 +1264,7 @@ export const blogPosts = [
 },
   {
   "slug": "tallyprime-7-1-invoice-customization-logos-watermarks",
-    hidden: true,
+    hidden: false,
   "title": "TallyPrime 7.1: Custom Invoice Logos & Watermarks - 2026",
   "tag": "Guide",
   "published": "2026-07-19",
