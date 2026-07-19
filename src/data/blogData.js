@@ -974,7 +974,7 @@ export const blogPosts = [
 },
   {
   "slug": "tally-ai-automatic-entry-gst-filing",
-    hidden: true,
+    hidden: false,
   "title": "Tally AI Entry Automation: GST Filing 2026",
   "tag": "Guide",
   "published": "2026-07-17",
