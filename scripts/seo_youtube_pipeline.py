@@ -153,12 +153,34 @@ def search_videos(topic, max_results=5):
     return videos
 
 
+# Topics we will NOT write about — competing or native Tally features that would
+# send readers to a rival rather than to Synergy Automation. "Ira" / "TallyIra" is
+# Tally's own AI assistant; an article about it promotes a competing feature.
+EXCLUDE_TOPIC_PATTERNS = [
+    r'\btally\s*ira\b',
+    r'\btallyira\b',
+    r'\bira\b',
+]
+
+
+def is_excluded_topic(text):
+    """True if the topic/title mentions a competing native feature we won't cover."""
+    t = (text or '').lower()
+    return any(re.search(p, t) for p in EXCLUDE_TOPIC_PATTERNS)
+
+
 def _clean_topic(title):
-    """Extract a clean topic string from a YouTube video title."""
+    """Extract a clean, searchable topic string from a YouTube video title."""
     t = re.sub(r'#\w+', '', title)
     t = re.sub(r'\|.*$', '', t)
     t = re.sub(r'^\s*\d+[\.\)]\s*', '', t)
-    t = re.sub(r'\s+', ' ', t).strip()
+    # Strip emoji and non-ASCII decoration — an emoji in the topic becomes an
+    # emoji in the YouTube search query, which returns zero results and kills the run.
+    t = re.sub(r'[^\x00-\x7F]+', ' ', t)
+    # Drop broad "course/masterclass/docs" tails that make bad article topics
+    t = re.sub(r'\b(complete|full)?\s*(masterclass|master class|docs|documentation|playlist|series|webinar)\b.*$',
+               '', t, flags=re.I)
+    t = re.sub(r'\s+', ' ', t).strip(' -–—:|')
     if len(t) > 80:
         t = t[:80].rsplit(' ', 1)[0]
     return t
@@ -218,10 +240,12 @@ def get_trending_topic(return_all=False):
                     # Skip Tally Solutions promos and broad course/playlist videos
                     broad_terms = ['complete course', 'full course', 'full tutorial', 'complete tutorial',
                                    'complete guide for beginners', 'part 1', 'part 2', 'part 3',
-                                   'episode', 'ep.', 'ep ']
+                                   'episode', 'ep.', 'ep ', 'masterclass', 'master class',
+                                   'webinar', 'playlist', 'live class', 'full series']
                     title_lower = title.lower()
                     if ('tally solution' not in channel.lower()
-                            and not any(t in title_lower for t in broad_terms)):
+                            and not any(t in title_lower for t in broad_terms)
+                            and not is_excluded_topic(title)):   # skip TallyIra etc.
                         candidates.append({'id': vid_id, 'title': title, 'channel': channel})
         except Exception as e:
             print(f'  Warning: trending search failed for "{query}": {e}')
@@ -1149,53 +1173,54 @@ def get_queue_topics(limit=10):
     return topics[:limit]
 
 
-def select_publishable_topic():
+def iter_publishable_topics():
     """
-    Keep trying candidate topics until one passes BOTH the relevance check and the
-    duplicate check — instead of giving up after a single fallback.
+    Yield candidate topics that pass BOTH relevance and duplicate checks, one at a
+    time, in priority order (trending first, then the manual queue).
 
-    Order: trending YouTube topics first (they are what people are actually
-    searching right now), then the manual queue. A topic that fails either check
-    is marked done so it is never retried. Returns a usable topic, or None if every
-    candidate is exhausted (nothing genuinely new to write today).
+    A GENERATOR (not a single return) is the point: the caller runs each yielded
+    topic through the full pipeline, and if generation fails downstream — e.g. the
+    YouTube search returns no videos, or transcripts can't be fetched — it simply
+    asks for the next candidate. That is what "search another but run" means:
+    keep going until one actually produces an article, not just until one passes
+    the cheap checks. A topic that fails a check is marked done so it never retries.
     """
     trending = get_trending_topic(return_all=True) or []
-    queued = get_queue_topics(limit=10)
+    queued = get_queue_topics(limit=15)
 
-    # De-dupe while preserving order (trending before queue)
     seen = set()
     candidates = []
     for t in trending + queued:
         key = t.lower()
-        if key not in seen:
+        if key and key not in seen:
             seen.add(key)
             candidates.append(t)
 
     if not candidates:
         print('  No candidate topics available.')
-        return None
+        return
 
-    print(f'  {len(candidates)} candidate topic(s) to try.')
+    print(f'  {len(candidates)} candidate topic(s) available.')
     for topic in candidates:
-        print(f'\n  Trying: "{topic}"')
+        # Hard exclude: competing/native Tally features (TallyIra etc.)
+        if is_excluded_topic(topic):
+            print(f'  SKIP (excluded — competing feature): "{topic[:50]}"')
+            mark_topic_done(topic)
+            continue
 
         is_relevant, reason = check_topic_relevance(topic)
         if not is_relevant:
-            print(f'    SKIP (not Tally-related): {reason}')
+            print(f'  SKIP (not Tally-related): "{topic[:50]}" — {reason}')
             mark_topic_done(topic)
             continue
 
         is_dup, dup_reason = check_topic_duplicate(topic)
         if is_dup:
-            print(f'    SKIP (duplicates existing article): {dup_reason}')
+            print(f'  SKIP (duplicate): "{topic[:50]}" — {dup_reason}')
             mark_topic_done(topic)
             continue
 
-        print(f'    OK -> "{topic}"')
-        return topic
-
-    print('\n  Every candidate was off-topic or already covered. Nothing new today.')
-    return None
+        yield topic
 
 
 # ─────────────────────────────────────────────
@@ -1304,17 +1329,30 @@ def main():
     # --trending  (discover topic from YouTube trending videos)
     if args and args[0] == '--trending':
         print('Discovering a fresh topic (trending + queue)...')
-        # Keeps trying candidates until one passes BOTH relevance and dedup,
-        # instead of giving up after a single fallback.
-        topic = select_publishable_topic()
-        if not topic:
-            print('Nothing new to write today. Exiting cleanly.')
-            return
-
-        print(f'\nTopic: "{topic}"')
-        success = run_pipeline(topic, provider=provider, auto=auto, push=push)
-        if success:
+        # Try each vetted candidate through the FULL pipeline until one succeeds.
+        # A topic can pass relevance+dedup but still fail generation (no videos for
+        # the search, transcripts unavailable). When that happens we move to the
+        # next candidate instead of giving up — "search another but run".
+        MAX_ATTEMPTS = 6
+        produced = False
+        attempts = 0
+        for topic in iter_publishable_topics():
+            attempts += 1
+            print(f'\n=== Attempt {attempts}: "{topic}" ===')
+            success = run_pipeline(topic, provider=provider, auto=auto, push=push)
+            if success:
+                mark_topic_done(topic)
+                produced = True
+                break
+            # Generation failed for this topic — don't retry it, try the next.
+            print(f'  Generation failed for "{topic[:50]}" — trying next candidate...')
             mark_topic_done(topic)
+            if attempts >= MAX_ATTEMPTS:
+                print(f'  Reached {MAX_ATTEMPTS} attempts without a usable article. Stopping for today.')
+                break
+
+        if not produced:
+            print('Nothing produced today (no candidate yielded a usable article). Exiting cleanly.')
         return
 
     # --queue  (pick next topic from static queue file)
