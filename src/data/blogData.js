@@ -1363,7 +1363,7 @@ export const blogPosts = [
 },
   {
   "slug": "tallyprime-vs-tallyerp9-upgrade-now",
-    hidden: true,
+    hidden: false,
   "title": "TallyPrime 6.0 vs Tally ERP 9: Upgrade Now in 2026",
   "tag": "Guide",
   "published": "2026-07-20",
