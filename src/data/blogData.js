@@ -1457,6 +1457,112 @@ export const blogPosts = [
       ]
     }
   ]
+},
+  {
+  "slug": "tallyprime-voucher-entry-shortcuts-2026",
+    hidden: true,
+  "title": "TallyPrime 6.0: 5 Voucher Entry Hacks for 2026",
+  "tag": "Guide",
+  "published": "2026-07-21",
+  "updated": "2026-07-21",
+  "description": "Master TallyPrime 6.0 voucher entry. Save hours with 5 essential shortcuts and tricks for Indian CAs in 2026.",
+  "keywords": "tallyprime voucher entry shortcuts, tally prime tips india, tally accounting tricks, tally 6.0 hacks, ca tally productivity",
+  "content": [
+    {
+      "type": "intro",
+      "text": "The GST 20th deadline looms. You are mid-voucher entry when asked for a quick Balance Sheet. Navigating away costs precious minutes. You need to switch instantly. This article reveals five TallyPrime 6.0 voucher entry hacks. Learn to bypass menus and perform calculations on the fly. You will finish your data entry faster."
+    },
+    {
+      "type": "h2",
+      "text": "What is TallyPrime Voucher Entry Speed Hacking?"
+    },
+    {
+      "type": "p",
+      "text": "This means using TallyPrime\'s built-in shortcuts and features. You bypass manual navigation. Think of it like a skilled driver using a steering wheel and pedals. Instead of a clunky gear shift, you use precise button presses. This saves significant time during high-volume data tasks."
+    },
+    {
+      "type": "h2",
+      "text": "How to Master Voucher Entry in TallyPrime 6.0 — Step by Step"
+    },
+    {
+      "type": "steps",
+      "items": [
+        {
+          "step": "Calculate amounts directly in the voucher. While in an amount field, press `Alt + C` to open the calculator. Perform your calculation, e.g., `7000 * 5%`. Press `Enter` to populate the result. Tally tip: Use this for interest, TDS, or GST calculations."
+        },
+        {
+          "step": "Create ledgers instantly from any voucher. In the Ledger field, press `Alt + C`. This opens the Ledger Creation screen. Enter ledger details and save. Watch out: Ensure the ledger group is correct before saving."
+        },
+        {
+          "step": "Navigate Day Book entries faster. Open the Day Book (`Gateway of Tally > Display More Reports > Account Books > Day Book`). Press `Alt + F2`. Enter `1` for the start date. For the end date, type the first three letters of the month, e.g., `AUG`. Tally tip: This selects the entire month."
+        },
+        {
+          "step": "Quickly select multiple voucher rows for deletion. In the Day Book, select the first row. Press `Shift + Spacebar` to highlight it. Hold `Shift` and press the `Down Arrow` to select subsequent rows. Watch out: Double-check your selection before pressing `Alt + D` for deletion."
+        },
+        {
+          "step": "Access any report without leaving your voucher. While in a voucher entry screen, press `Alt + G`. Type the report name, e.g., 'Balance Sheet'. Select it from the list. Tally tip: Press `Esc` to return directly to your voucher entry."
+        }
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "Mistakes That Cost Indian CAs Hours"
+    },
+    {
+      "type": "list",
+      "items": [
+        "Mistake: Manually calculating interest or tax in a voucher. → Fix: Use `Alt + C` calculator within TallyPrime 6.0.",
+        "Mistake: Navigating back to Gateway of Tally to create a new ledger. → Fix: Use `Alt + C` from the voucher's ledger field.",
+        "Mistake: Scrolling endlessly in the Day Book to find a specific date range. → Fix: Use `Alt + F2` for date range selection.",
+        "Mistake: Closing the current voucher to check a report. → Fix: Use `Alt + G` to open reports and `Esc` to return."
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "Pro Tips for 2026"
+    },
+    {
+      "type": "p",
+      "text": "Configure your default voucher entry screen. Press `F12` in any voucher. Select 'Show More Configuration'. Change 'Skip the date field during voucher creation' to `No`. This makes the date field appear first. Synergy Automation can help streamline repetitive data entry tasks by posting directly to Tally without XML files, supporting both TallyPrime and Tally ERP 9."
+    },
+    {
+      "type": "infographic",
+      "variant": "steps",
+      "title": "5 Voucher Entry Speed Hacks",
+      "items": [
+        "Calculator: `Alt + C` in amount field",
+        "New Ledger: `Alt + C` in ledger field",
+        "Date Range: `Alt + F2` in Day Book",
+        "Multi-Delete: `Shift + Spacebar` + Arrows",
+        "Quick Reports: `Alt + G` from anywhere"
+      ]
+    },
+    {
+      "type": "faq",
+      "items": [
+        {
+          "q": "How to do quick calculations in TallyPrime 6.0 voucher entry?",
+          "a": "Press `Alt + C` while in the amount field of any voucher. This opens Tally's calculator. Enter your formula and press `Enter` to insert the result directly into the voucher."
+        },
+        {
+          "q": "Can I create a new ledger without leaving TallyPrime voucher entry?",
+          "a": "Yes. While entering a voucher, if you need a new ledger, press `Alt + C` in the ledger selection field. This opens the Ledger Creation screen. After saving the new ledger, it will automatically be selected in your voucher."
+        },
+        {
+          "q": "How to quickly change the date range in TallyPrime Day Book?",
+          "a": "Open the Day Book. Press `Alt + F2`. Enter the desired start date. For the end date, you can type the first three letters of the month (e.g., `SEP`) to select the entire month."
+        },
+        {
+          "q": "What is the difference in voucher entry shortcuts between Tally ERP 9 and TallyPrime 6.0?",
+          "a": "TallyPrime 6.0 introduced the `Alt + G` 'Go To' feature for accessing reports and masters quickly. While Tally ERP 9 had extensive shortcuts, TallyPrime 6.0 enhances this with a more intuitive search-based navigation."
+        },
+        {
+          "q": "How much time can these TallyPrime 6.0 hacks save?",
+          "a": "For CAs processing hundreds of vouchers daily, these hacks can reduce data entry time by 15-20%. This translates to saving potentially 1-2 hours per day, allowing more time for analysis."
+        }
+      ]
+    }
+  ]
 }
 ];
 
