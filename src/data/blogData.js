@@ -1566,7 +1566,7 @@ export const blogPosts = [
 },
   {
   "slug": "gst-payment-challan-entry-tallyprime-6-0",
-    hidden: true,
+    hidden: false,
   "title": "GST Payment Entry in TallyPrime 6.0 (2026)",
   "tag": "Guide",
   "published": "2026-07-22",
