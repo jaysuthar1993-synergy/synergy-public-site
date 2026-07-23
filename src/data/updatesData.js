@@ -396,6 +396,21 @@ export const updates = [
     url: 'https://nitter.net/IncomeTaxIndia/status/2078009285028815085#m',
     relatedSlug: '',
   },
+  {
+    id: 'cbic-india-twitter-2026-07-22-customs-boosts-container-sca',
+    type: 'govt',
+    title: 'Customs Boosts Container Scanning; Trade Feedback Sought',
+    source: 'CBIC India (Twitter)',
+    date: '2026-07-22',
+    summary: 'Government officials visited ports to push for 100% container scanning, a goal set in Budget 2026. They also met with businesses to get feedback on new customs rules. This aims to speed up trade and improve efficiency.',
+    keyPoints: [
+      { label: 'Container Scanning Goal', text: 'CBIC is working towards 100% non-intrusive inspection (scanning) of containers.' },
+      { label: 'Trade Feedback', text: 'Customs officials are actively seeking input from businesses on recent budget reforms.' },
+    ],
+    tallyImpact: '',
+    url: 'https://nitter.net/cbic_india/status/2079925828767678859#m',
+    relatedSlug: '',
+  },
 ];
 
 export function getRecentUpdates(limit = 20) {
