@@ -411,6 +411,21 @@ export const updates = [
     url: 'https://nitter.net/cbic_india/status/2079925828767678859#m',
     relatedSlug: '',
   },
+  {
+    id: 'cbic-india-twitter-2026-07-23-gst-officials-review-delhi-z',
+    type: 'govt',
+    title: 'GST Officials Review Delhi Zone Performance: Focus on Taxpayer Services',
+    source: 'CBIC India (Twitter)',
+    date: '2026-07-23',
+    summary: 'Top GST officials met in Delhi to review the performance of the CGST Delhi Zone. The discussion covered revenue, ongoing projects, and how to improve services for taxpayers and handle their complaints better. This aims to strengthen the overall GST administration.',
+    keyPoints: [
+      { label: 'GST Administration Review', text: 'CBIC Member reviewed CGST Delhi Zone\'s performance, focusing on revenue, initiatives, and taxpayer services.' },
+      { label: 'Taxpayer Services Focus', text: 'Efforts are being made to enhance taxpayer services and improve grievance redressal mechanisms.' },
+    ],
+    tallyImpact: '',
+    url: 'https://nitter.net/cbic_india/status/2080287200944812258#m',
+    relatedSlug: '',
+  },
 ];
 
 export function getRecentUpdates(limit = 20) {
