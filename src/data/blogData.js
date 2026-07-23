@@ -1670,7 +1670,7 @@ export const blogPosts = [
 },
   {
   "slug": "correctly-create-tally-groups-ledgers-2026",
-    hidden: true,
+    hidden: false,
   "title": "Create Tally Groups & Ledgers Accurately - TallyPrime 6.0 2026",
   "tag": "Guide",
   "published": "2026-07-23",
