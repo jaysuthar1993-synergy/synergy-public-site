@@ -1768,7 +1768,7 @@ export const blogPosts = [
 },
   {
   "slug": "tds-entry-bank-transfer-tallyprime",
-    hidden: true,
+    hidden: false,
   "title": "TDS Bank Entry in TallyPrime 6.0: 2026 Guide",
   "tag": "Guide",
   "published": "2026-07-24",
