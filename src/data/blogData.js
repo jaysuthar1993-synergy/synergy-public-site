@@ -1765,6 +1765,107 @@ export const blogPosts = [
       ]
     }
   ]
+},
+  {
+  "slug": "tds-entry-bank-transfer-tallyprime",
+    hidden: true,
+  "title": "TDS Bank Entry in TallyPrime 6.0: 2026 Guide",
+  "tag": "Guide",
+  "published": "2026-07-24",
+  "updated": "2026-07-24",
+  "description": "Master TDS bank entries in TallyPrime 6.0 for 2026. Learn precise steps, avoid common errors, and streamline your compliance.",
+  "keywords": "TDS entry Tally bank, TDS payment TallyPrime, TallyPrime 6.0 TDS, TDS challan Tally, Indian CA TDS",
+  "content": [
+    {
+      "type": "intro",
+      "text": "The 7th of next month looms. You need to deposit TDS collected from vendors. Manually creating bank entries for TDS payments feels like a time drain. Incorrect entries can lead to penalties. This article shows you the exact TallyPrime 6.0 method. You will learn to record TDS payments accurately. You will also discover how to avoid frequent mistakes."
+    },
+    {
+      "type": "h2",
+      "text": "What is a TDS Bank Entry?"
+    },
+    {
+      "type": "p",
+      "text": "A TDS bank entry records your payment of deducted TDS to the government. Think of it like settling a bill with the tax department. You transfer the exact TDS amount collected. TallyPrime helps you record this. This ensures your TDS liability is cleared. It's a crucial step for compliance."
+    },
+    {
+      "type": "h2",
+      "text": "How to Record TDS Payment in TallyPrime 6.0 — Step by Step"
+    },
+    {
+      "type": "steps",
+      "items": [
+        "Go to `Gateway of Tally > Display More Reports > Statements of Accounts > TDS > Payment Dues`.",
+        "Select the `Party` (e.g., `Central Government`). Tally tip: Ensure your TDS Payable ledger is linked correctly.",
+        "Select the `Nature of Payment` for which TDS is due. Watch out: Incorrect selection leads to wrong challan details.",
+        "Press `Alt+A` to `Accept` the TDS dues report.",
+        "Press `Alt+P` to `Print` or `Alt+E` to `Export` the payment voucher details. For direct bank entry, press `Enter` on the voucher.",
+        "Select the `Bank Ledger` from which the payment is made (e.g., `SBI – Savings Account`).",
+        "Enter the `Instrument Number` (cheque or NEFT/RTGS reference) and `Date`.",
+        "Press `Ctrl+A` to save the Bank Allocation screen and then `Ctrl+A` to save the voucher."
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "Mistakes That Cost Indian CAs Hours"
+    },
+    {
+      "type": "list",
+      "items": [
+        "Mistake: Not enabling `TDS Payable` ledger under `Duties and Taxes`. → Breaks TDS reporting. → Fix: Ensure TDS Payable ledger is correctly configured.",
+        "Mistake: Using a direct expense ledger for TDS payment. → TDS is not tracked as a liability. → Fix: Always use the `TDS Payable` ledger for recording TDS liability.",
+        "Mistake: Ignoring the `Nature of Payment` selection in TDS Dues. → Generates incorrect challan details. → Fix: Carefully select the exact Nature of Payment matching your deduction.",
+        "Mistake: Entering TDS amount manually in bank voucher. → Misses auto-calculation. → Fix: Generate TDS payment voucher from `Payment Dues` to auto-populate amounts."
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "Pro Tips for 2026"
+    },
+    {
+      "type": "p",
+      "text": "Always reconcile your TDS payable balance with the actual government payment records. For large volumes of TDS payments, consider using Synergy Automation. It can automate the creation of these bank entries directly in TallyPrime 6.0. This saves significant manual effort, especially around the 7th of the month."
+    },
+    {
+      "type": "infographic",
+      "variant": "steps",
+      "title": "TDS Payment Workflow",
+      "items": [
+        "Identify TDS Dues",
+        "Select Party & Nature",
+        "Accept TDS Report",
+        "Generate Payment Voucher",
+        "Select Bank Ledger",
+        "Enter Ref Details",
+        "Save Voucher"
+      ]
+    },
+    {
+      "type": "faq",
+      "items": [
+        {
+          "q": "How to record TDS payment to bank in TallyPrime 6.0?",
+          "a": "Navigate to `Gateway of Tally > Display More Reports > Statements of Accounts > TDS > Payment Dues`. Accept the dues and create a payment voucher against your bank ledger. Ensure the TDS Payable ledger is used for liability."
+        },
+        {
+          "q": "What if TDS is deducted on multiple vendors?",
+          "a": "TallyPrime aggregates TDS dues by Nature of Payment. You create one payment entry to the government, reflecting the total TDS deducted across all vendors for that specific Nature of Payment."
+        },
+        {
+          "q": "Can I directly post TDS payment from bank statement?",
+          "a": "While you can record a payment voucher against your bank, it is best practice to first generate the TDS payment voucher from the TDS Dues report. This ensures accurate amounts and correct Nature of Payment linkage."
+        },
+        {
+          "q": "TDS payment in Tally ERP 9 vs TallyPrime 6.0?",
+          "a": "The core process is similar. TallyPrime 6.0 offers a more streamlined interface for accessing TDS reports and generating payment vouchers. The `Payment Dues` report is a key area for both versions."
+        },
+        {
+          "q": "How long does TDS bank entry recording take in TallyPrime 6.0?",
+          "a": "For a single TDS payment, it takes under 5 minutes. For multiple Nature of Payments, it can extend to 15-20 minutes if done manually, excluding reconciliation time."
+        }
+      ]
+    }
+  ]
 }
 ];
 
